@@ -1,0 +1,37 @@
+ID,Categoria,Descricao,Marca,NumeroSerie,DataCompra,ValorPago,Fornecedor,Status,ColaboradorAtual,LocalArmazenamento,RequerCalibracao,UltimaCalibracao,ProximaCalibracao,NumeroCertificadoCalibracao,Observacoes
+WLDK05,Notebook,Dell Inc. Inspiron 3647,Dell,,,2600,,Em estoque,,Armario 3,Não,,,,
+WLNB01,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Em estoque,,Armario 3,Não,,,,
+WLNB02,Notebook,LENOVO 81JM,Lenovo,,,3100,,Com colaborador,Bárbara Bezerra,Escritório Central,Não,,,,
+WLNB06,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Emerson,Escritório Central,Não,,,,
+WLNB07,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Fernando Luna,Escritório Central,Não,,,,
+WLNB08,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Tatiane Furigo,Escritório Central,Não,,,,
+WLNB09,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,,Escritório Central,Não,,,,"Responsável constava como ""off"" na planilha de origem — confirmar quem é ou se está mesmo sem usuário"
+WLNB10,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Em estoque,,Escritório Central,Não,,,,
+WLNB11,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Em estoque,,Escritório Central,Não,,,,
+WLNB12,Notebook,Samsung 550XDA,Samsung,,,2950,,Com colaborador,Edison Cassimiro,Escritório Central,Não,,,,
+WLNB13,Notebook,LENOVO 81JM,Lenovo,,,3100,,Em estoque,,Armario 3,Não,,,,
+WLNB14,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Em estoque,,Escritório Central,Não,,,,
+WLNB15,Notebook,Samsung 550XDA,Samsung,,,2950,,Em estoque,,Escritório Central,Não,,,,
+WLNB16,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Alexandre Barros da Silva,Escritório Central,Não,,,,
+WLNB17,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Felipe Peres,Escritório Central,Não,,,,
+WLNB18,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Em estoque,,Armario 3,Não,,,,
+WLNB19,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Com colaborador,Evandro Lima,Escritório Central,Não,,,,"Estava marcado como inativo/devolvido no controle_ti.xlsx — confirmar se voltou à ativa"
+WLNB20,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Em estoque,,Escritório Central,Não,,,,
+WLNB21,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Igor Hirayama,Escritório Central,Não,,,,"Estava marcado como inativo/devolvido no controle_ti.xlsx — confirmar se voltou à ativa"
+WLNB22,Notebook,LENOVO 81JM,Lenovo,,,3100,,Em estoque,,Escritório Central,Não,,,,
+WLNB23,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Em estoque,,Escritório Central,Não,,,,
+WLNB24,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Gustavo Ramin,Escritório Central,Não,,,,
+WLNB25,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Em estoque,,Escritório Central,Não,,,,
+WLNB26,Notebook,Samsung 550XDA,Samsung,,,2950,,Com colaborador,Danilo Tibana Ito,Escritório Central,Não,,,,
+WLNB27,Notebook,Samsung Electronics Co. Ltd.,Samsung,,,2950,,Em estoque,,Armario 3,Não,,,,
+WLNB28,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Com colaborador,Guilherme Coletto,Escritório Central,Não,,,,"Estava marcado como inativo/devolvido no controle_ti.xlsx — confirmar se voltou à ativa"
+WLNB29,Notebook,Dell Inc. Vostro 5490,Dell,,,4500,,Em estoque,,Armario 3,Não,,,,
+WLNB30,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Com colaborador,Charlene Belchior,Escritório Central,Não,,,,
+WLNB31,Notebook,Samsung 550XDA,Samsung,,,2950,,Em estoque,,Escritório Central,Não,,,,
+WLNB32,Notebook,Samsung 550XDA,Samsung,,,2950,,Com colaborador,Samantha Andrade,Escritório Central,Não,,,,
+WLNB33,Notebook,LENOVO 82DJ,Lenovo,,,3800,,Em estoque,,Armario 3,Não,,,,
+WLNB34,Notebook,LENOVO 81S9,Lenovo,,,3000,,Com colaborador,Gustavo Saunorins,Escritório Central,Não,,,,
+WLNB35,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Thays Guedes,Escritório Central,Não,,,,
+331,Notebook,Dell Inc. Vostro 15 3510,Dell,,,4000,,Com colaborador,Marina Brito,Escritório Central,Não,,,,"Código veio como ""331"" na planilha de origem, fora do padrão WLNB-XX — confirmar o código de patrimônio correto antes de gerar a etiqueta"
+WLNB38,Notebook,LENOVO 81S9,Lenovo,,,3000,,Em estoque,,Escritório Central,Não,,,,
+WLNB39,Notebook,Positivo H14BT58,Positivo,,,1500,,Em estoque,,Armario 3,Não,,,,

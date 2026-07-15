@@ -1,0 +1,29 @@
+ID,Categoria,Descricao,Marca,NumeroSerie,DataCompra,ValorPago,Fornecedor,Status,ColaboradorAtual,LocalArmazenamento,RequerCalibracao,UltimaCalibracao,ProximaCalibracao,NumeroCertificadoCalibracao,Observacoes
+CEL-207,Celular,Celular corporativo,,,,,,Com colaborador,Claudia,,Não,,,,
+CEL-194,Celular,Celular corporativo,,,,,,Com colaborador,Felipe Campello,,Não,,,,
+CEL-210,Celular,Celular corporativo,,,,,,Com colaborador,Giovanne Caria,,Não,,,,
+CEL-000340,Celular,Celular corporativo,,,,,,Com colaborador,Daniela Daiane Cabral Caetano,,Não,,,,
+CEL-000173,Celular,Celular corporativo,,,,,,Em estoque,,,Não,,,,"PENDÊNCIA: patrimônio 000173 aparece tanto na aba de Josiane Leitão quanto na de Gustavo Ramin no controle_ti.xlsx (idêntico ao ""P 000177"" citado como notebook nas duas também) — confirme fisicamente quem está com o aparelho antes de atribuir um colaborador"
+CEL-000240,Celular,Celular corporativo,,,,,,Em estoque,,,Não,,,,"Devolvido — estava com João Pedro Toriani Vaqueiro (ex-colaborador)"
+CEL-182,Celular,Galaxy A20,Samsung,,,,,Em estoque,,,Não,,,,"Devolvido — estava com Beatriz Rocha (ex-colaboradora). Touch falhava às vezes"
+CEL-341,Celular,Celular corporativo,,,,,,Em estoque,,,Não,,,,"Devolvido — estava com Roberto Carlos de Jesus (marcado inativo, planilha indicava ""tudo devolvido"")"
+CEL-213,Celular,Moto G9,Motorola,,,,,Com colaborador,Evandro Lima,,Não,,,,"Planilha original indicava devolvido, mas ele aparece ativo na tabela de notebooks — confirme"
+CEL-000267,Celular,Celular corporativo,,,,,,Com colaborador,Charlene Belchior,,Não,,,,
+CEL-187,Celular,Moto G9 Play,Motorola,,,,,Com colaborador,Arnaldo Cordeiro,,Não,,,,Sem carregador
+CEL-216,Celular,Celular corporativo,,,,,,Com colaborador,Giullia Traldi,,Não,,,,Carregador quebrado
+CEL-345,Celular,Celular corporativo,,,,,,Com colaborador,Fernando Luna,,Não,,,,
+CEL-MIKAELLY,Celular,Motorola G10,Motorola,,,,,Em estoque,,,Não,,,,"Devolvido — estava com Mikaelly Santos (ex-colaboradora). Sem número de patrimônio na planilha original"
+CEL-MONICA,Celular,Moto G20,Motorola,,,,,Em estoque,,,Não,,,,"Devolvido — estava com Monica Yoshimoto (ex-colaboradora). Sem carregador. Sem número de patrimônio na planilha original"
+CEL-THAYS,Celular,Celular corporativo,,,,,,Com colaborador,Thays Guedes,,Não,,,,Sem número de patrimônio registrado na planilha original — confirme
+CEL-JULIA,Celular,Moto G9,Motorola,,,,,Com colaborador,Júlia Oliveira,,Não,,,,Sem número de patrimônio registrado na planilha original — confirme
+CEL-BARBARA,Celular,Celular corporativo,,,,,,Com colaborador,Bárbara Bezerra,,Não,,,,"Funcionando perfeitamente, segundo a colaboradora. Sem número de patrimônio registrado — confirme"
+CEL-SAMANTHA-STOCCO,Celular,Celular corporativo,,,,,,Com colaborador,Samantha Stocco,,Não,,,,"Aparelho lento, trava algumas vezes, segundo a colaboradora. Sem número de patrimônio registrado — confirme"
+CEL-EDUARDA-COPATI,Celular,Motorola G10,Motorola,,,,,Em estoque,,,Não,,,,"Devolvido — estava com Eduarda Copati (aba constava como ""Emanuela"", ver colaboradores-import.md). Tela trincada e riscada. Sem número de patrimônio"
+CEL-MARCIA-ARAUJO,Celular,Moto G20,Motorola,,,,,Em estoque,,,Não,,,,"Devolvido — estava com Marcia Araujo (ex-colaboradora). Com carregador. Sem número de patrimônio"
+CEL-JONATHAN-OLIVEIRA,Celular,Celular corporativo,,,,,,Em estoque,,,Não,,,,"Devolvido — estava com Jonathan Oliveira (ex-colaborador). Sem número de patrimônio"
+CEL-TATIANE,Celular,Celular corporativo,,,,,,Com colaborador,Tatiane Furigo,,Não,,,,Sem número de patrimônio registrado na planilha original — confirme
+CEL-DANILO-ITO,Celular,Moto G9,Motorola,,,,,Com colaborador,Danilo Tibana Ito,,Não,,,,"Sem carregador. Sem número de patrimônio — os demais periféricos dele estavam marcados ""Pessoal"", confirme se este celular é mesmo corporativo"
+CEL-ALEXANDRE,Celular,Celular corporativo,,,,,,Com colaborador,Alexandre Barros da Silva,,Não,,,,Sem número de patrimônio registrado na planilha original — confirme
+CEL-GUSTAVO-SAUNORINS,Celular,Celular corporativo,,,,,,Com colaborador,Gustavo Saunorins,,Não,,,,Sem número de patrimônio registrado na planilha original — confirme
+CEL-VITOR,Celular,Moto G9,Motorola,,,,,Com colaborador,Vitor Lucas Sobottka Cavenaghi,,Não,,,,Sem número de patrimônio — os demais periféricos dele estavam mistos pessoal/corporativo, confirme
+CEL-GUILHERME,Celular,Moto G9 Play,Motorola,,,,,Com colaborador,Guilherme Coletto,,Não,,,,"Sem carregador. Sem número de patrimônio — os demais periféricos dele (home office) estavam marcados ""Pessoal"", confirme se este celular é mesmo corporativo"

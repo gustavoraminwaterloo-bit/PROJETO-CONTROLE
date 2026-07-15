@@ -1,0 +1,8 @@
+{
+  "name": "controle-insumos-patrimonio",
+  "private": true,
+  "description": "Site estático + Netlify Function para controle de insumos, patrimônio e equipamentos.",
+  "engines": {
+    "node": ">=18"
+  }
+}

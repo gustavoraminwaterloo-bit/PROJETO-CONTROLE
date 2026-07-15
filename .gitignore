@@ -1,0 +1,7 @@
+.env
+.env.*
+.netlify/
+desktop.ini
+.DS_Store
+Thumbs.db
+.claude/

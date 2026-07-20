@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { escapeHtml, classeBadgeStatus, formatarMoeda, ordenarPor, paginar, abrirModal, fecharModal } from '../util.js';
 import { icons } from '../icons.js';
 
-const CATEGORIAS_BASE = ['Notebook', 'Celular', 'Mouse', 'Teclado', 'Mousepad', 'Suporte', 'Adaptador de Tela', 'Monitor', 'Equipamento de Medição', 'Outro'];
+const CATEGORIAS_BASE = ['Notebook', 'Celular', 'Mouse', 'Teclado', 'Mousepad', 'Suporte', 'Adaptador de Tela', 'Monitor', 'Outro'];
 const STATUS = ['Em estoque', 'Com colaborador', 'Em projeto', 'Em manutenção', 'Fora de uso'];
 const POR_PAGINA = 10;
 
@@ -166,9 +166,6 @@ export async function viewItemForm(main) {
         <label>Projeto (opcional — para atribuir o custo deste item a um projeto)
           <input name="ProjetoDestino" list="lista-projetos-item" placeholder="deixe em branco se não for o caso" />
           <datalist id="lista-projetos-item">${projetos.map((p) => `<option value="${escapeHtml(p.Codigo)}">`).join('')}</datalist>
-        </label>
-        <label>Requer calibração periódica?
-          <select name="RequerCalibracao"><option>Não</option><option>Sim</option></select>
         </label>
         <label style="grid-column: 1 / -1">Observações
           <textarea name="Observacoes"></textarea>

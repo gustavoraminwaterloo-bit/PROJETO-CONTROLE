@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { formatarMoeda, formatarData, formatarDataHora, escapeHtml, diaISO, classeBadgeStatus } from '../util.js';
+import { formatarMoeda, formatarData, formatarDataHora, escapeHtml, diaISO, classeBadgeStatus, linkDoAviso } from '../util.js';
 import { icons } from '../icons.js';
 
 function statCard({ icone, classeIcone, valor, rotulo, tendencia }) {
@@ -41,7 +41,7 @@ function graficoMovimentacoes(movimentacoes) {
     return {
       dia,
       entradas: doDia.filter((m) => m.Tipo === 'Entrada-Compra').length,
-      saidas: doDia.filter((m) => m.Tipo === 'Saida-Projeto' || m.Tipo === 'Alocacao-Colaborador').length
+      saidas: doDia.filter((m) => m.Tipo === 'Saida-Projeto' || m.Tipo === 'Alocacao-Colaborador' || m.Tipo === 'Locacao-Equipamento').length
     };
   });
 
@@ -117,7 +117,7 @@ function linhaAviso(a) {
       ${icons.alerta}
       <div>
         <strong>${escapeHtml(a.tipo)}</strong> — ${escapeHtml(a.descricao || a.id)}
-        (<a href="#/item/${encodeURIComponent(a.id)}">${escapeHtml(a.id)}</a>):
+        (<a href="${linkDoAviso(a)}">${escapeHtml(a.id)}</a>):
         vence em ${formatarData(a.data)}
         ${a.diasRestantes < 0 ? `<strong>(vencido há ${Math.abs(a.diasRestantes)} dias)</strong>` : `(faltam ${a.diasRestantes} dias)`}
       </div>
@@ -125,11 +125,16 @@ function linhaAviso(a) {
   `;
 }
 
+function ehTipoEquipamento(tipo) {
+  return tipo === 'Locacao-Equipamento' || tipo === 'Devolucao-Equipamento' || tipo === 'Calibracao';
+}
+
 function linhaMovimentacao(m) {
+  const link = ehTipoEquipamento(m.Tipo) ? `#/equipamento/${encodeURIComponent(m.ItemID)}` : `#/item/${encodeURIComponent(m.ItemID)}`;
   return `
     <tr>
       <td>${formatarDataHora(m.DataHora)}</td>
-      <td><a href="#/item/${encodeURIComponent(m.ItemID)}">${escapeHtml(m.ItemID)}</a></td>
+      <td><a href="${link}">${escapeHtml(m.ItemID)}</a></td>
       <td><span class="badge ${classeBadgeStatus(mapaTipoStatus(m.Tipo))}">${escapeHtml(m.Tipo)}</span></td>
       <td>${escapeHtml(m.ColaboradorEnvolvido || m.ProjetoDestino || '-')}</td>
     </tr>
@@ -142,14 +147,17 @@ function mapaTipoStatus(tipo) {
     'Alocacao-Colaborador': 'Com colaborador',
     'Saida-Projeto': 'Em projeto',
     'Devolucao': 'Em estoque',
+    'Locacao-Equipamento': 'Em locação',
+    'Devolucao-Equipamento': 'Em estoque',
     'Calibracao': 'Em estoque'
   };
   return mapa[tipo] || '';
 }
 
 export async function viewDashboard(main) {
-  const [itens, custos, avisos, movimentacoes] = await Promise.all([
+  const [itens, equipamentos, custos, avisos, movimentacoes] = await Promise.all([
     api.listItens(),
+    api.listEquipamentos(),
     api.custoPorProjeto(),
     api.avisos(60),
     api.listMovimentacoes()
@@ -159,9 +167,10 @@ export async function viewDashboard(main) {
   const ontem = diaISO(new Date(Date.now() - 86400000));
   const entradasHoje = movimentacoes.filter((m) => m.Tipo === 'Entrada-Compra' && diaISO(m.DataHora) === hoje).length;
   const entradasOntem = movimentacoes.filter((m) => m.Tipo === 'Entrada-Compra' && diaISO(m.DataHora) === ontem).length;
-  const saidasHoje = movimentacoes.filter((m) => (m.Tipo === 'Saida-Projeto' || m.Tipo === 'Alocacao-Colaborador') && diaISO(m.DataHora) === hoje).length;
-  const saidasOntem = movimentacoes.filter((m) => (m.Tipo === 'Saida-Projeto' || m.Tipo === 'Alocacao-Colaborador') && diaISO(m.DataHora) === ontem).length;
+  const saidasHoje = movimentacoes.filter((m) => (m.Tipo === 'Saida-Projeto' || m.Tipo === 'Alocacao-Colaborador' || m.Tipo === 'Locacao-Equipamento') && diaISO(m.DataHora) === hoje).length;
+  const saidasOntem = movimentacoes.filter((m) => (m.Tipo === 'Saida-Projeto' || m.Tipo === 'Alocacao-Colaborador' || m.Tipo === 'Locacao-Equipamento') && diaISO(m.DataHora) === ontem).length;
   const emEstoque = itens.filter((i) => i.Status === 'Em estoque').length;
+  const equipamentosEmLocacao = equipamentos.filter((e) => e.Status === 'Em locação').length;
   const custoTotal = custos.reduce((soma, c) => soma + c.custo, 0);
 
   main.innerHTML = `
@@ -174,6 +183,7 @@ export async function viewDashboard(main) {
       ${statCard({ icone: icons.box, classeIcone: 'icone-azul', valor: emEstoque, rotulo: 'Itens em estoque' })}
       ${statCard({ icone: icons.entrada, classeIcone: 'icone-verde', valor: entradasHoje, rotulo: 'Entradas hoje', tendencia: tendenciaDeContagem(entradasHoje, entradasOntem) })}
       ${statCard({ icone: icons.saida, classeIcone: 'icone-roxo', valor: saidasHoje, rotulo: 'Saídas hoje', tendencia: tendenciaDeContagem(saidasHoje, saidasOntem) })}
+      ${statCard({ icone: icons.equipamento, classeIcone: 'icone-roxo', valor: equipamentosEmLocacao, rotulo: 'Equipamentos em locação' })}
       ${statCard({ icone: icons.alerta, classeIcone: 'icone-amarelo', valor: avisos.length, rotulo: 'Avisos críticos (60 dias)' })}
     </div>
 

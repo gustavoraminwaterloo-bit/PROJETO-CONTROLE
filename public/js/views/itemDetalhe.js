@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { escapeHtml, classeBadgeStatus, formatarMoeda, formatarData, formatarDataHora } from '../util.js';
+import { escapeHtml, classeBadgeStatus, formatarMoeda, formatarDataHora } from '../util.js';
 
 function linhaHistorico(m) {
   const detalhes = [];
@@ -32,11 +32,6 @@ export async function viewItemDetalhe(main, { id }) {
            <strong>Valor pago:</strong> ${item.ValorPago ? formatarMoeda(item.ValorPago) : '-'}<br/>
            <strong>Fornecedor:</strong> ${escapeHtml(item.Fornecedor || '-')}</p>
       </div>
-      ${item.RequerCalibracao === 'Sim' ? `
-        <p><strong>Última calibração:</strong> ${formatarData(item.UltimaCalibracao)} ·
-           <strong>Próxima calibração:</strong> ${formatarData(item.ProximaCalibracao)} ·
-           <strong>Certificado:</strong> ${escapeHtml(item.NumeroCertificadoCalibracao || '-')}</p>
-      ` : ''}
       ${item.Observacoes ? `<p><strong>Observações:</strong> ${escapeHtml(item.Observacoes)}</p>` : ''}
     </div>
 
@@ -84,18 +79,6 @@ export async function viewItemDetalhe(main, { id }) {
           <button type="submit">Confirmar devolução</button>
         </form>
       </details>
-      ${item.RequerCalibracao === 'Sim' ? `
-        <details style="margin-top:10px">
-          <summary>Registrar calibração</summary>
-          <form id="form-calibracao" style="margin-top:10px">
-            <label>Data da calibração realizada <input name="UltimaCalibracao" type="date" required /></label>
-            <label>Próxima calibração prevista <input name="ProximaCalibracao" type="date" required /></label>
-            <label>Nº do certificado <input name="NumeroCertificadoCalibracao" /></label>
-            <label>Observações <textarea name="Observacoes"></textarea></label>
-            <button type="submit">Confirmar calibração</button>
-          </form>
-        </details>
-      ` : ''}
       <p class="msg-erro" id="erro-acao" style="display:none; margin-top:10px"></p>
     </div>
 
@@ -132,5 +115,4 @@ export async function viewItemDetalhe(main, { id }) {
   ligarFormulario('form-alocar', api.alocarColaborador);
   ligarFormulario('form-saida-projeto', api.registrarSaidaProjeto);
   ligarFormulario('form-devolucao', api.registrarDevolucao);
-  ligarFormulario('form-calibracao', api.registrarCalibracao);
 }

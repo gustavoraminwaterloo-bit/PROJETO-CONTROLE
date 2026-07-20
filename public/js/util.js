@@ -1,3 +1,23 @@
+import { icons } from './icons.js';
+
+export function linkDoAviso(aviso) {
+  if (aviso.tipo === 'Calibração') return `#/equipamento/${encodeURIComponent(aviso.id)}`;
+  return '#/materiais-referencia';
+}
+
+export function avisoLembretePG005() {
+  return `
+    <div class="aviso atencao">
+      ${icons.alerta}
+      <div>
+        <strong>Lembrete:</strong> para locação de multiparâmetro, kit de baixa vazão, bomba de
+        bexiga, interface, medidor de NA, caixa controladora, turbidímetro, mangueira 6mm ou bexiga
+        para amostragem — preencha o <strong>PG005</strong> e anexe o pedido de compras.
+      </div>
+    </div>
+  `;
+}
+
 export function formatarMoeda(valor) {
   const n = Number(valor) || 0;
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -35,6 +55,7 @@ export function classeBadgeStatus(status) {
     'Em estoque': 'estoque',
     'Com colaborador': 'colaborador',
     'Em projeto': 'projeto',
+    'Em locação': 'projeto',
     'Em manutenção': 'manutencao',
     'Fora de uso': 'fora'
   };

@@ -1,22 +1,35 @@
 # Planilha modelo (Google Sheets)
 
-Crie uma planilha nova no Google Sheets com exatamente estas 5 abas. Os nomes das abas e das colunas
+Crie uma planilha nova no Google Sheets com exatamente estas 6 abas. Os nomes das abas e das colunas
 precisam ser digitados **exatamente assim** (maiúsculas/minúsculas e acentos importam), porque o
 Apps Script (`apps-script/Code.gs`) lê e escreve usando esses nomes.
 
 Cada aba precisa ter os cabeçalhos na **linha 1**, uma coluna por campo, na ordem abaixo (a ordem em
 si não importa para o sistema, mas facilita conferir visualmente).
 
-## Aba `Itens`
+## Aba `Itens` (patrimônio de TI)
 
-| ID | Categoria | Descricao | Marca | NumeroSerie | DataCompra | ValorPago | Fornecedor | Status | ColaboradorAtual | LocalArmazenamento | RequerCalibracao | UltimaCalibracao | ProximaCalibracao | NumeroCertificadoCalibracao | Observacoes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ID | Categoria | Descricao | Marca | NumeroSerie | DataCompra | ValorPago | Fornecedor | Status | ColaboradorAtual | LocalArmazenamento | Observacoes |
+|---|---|---|---|---|---|---|---|---|---|---|---|
 
-- **ID**: código único do item (ex: `NB-001`, `MP-01`, `CEL-003`). Você escolhe o formato — mantenha os
-  códigos que já existem no `LEMCC-V02.xlsx` e no `PT-005-F02-V03.xlsx` para os equipamentos de medição.
-- **Categoria**: Notebook / Celular / Mouse / Teclado / Mousepad / Suporte / Adaptador de Tela / Monitor / Equipamento de Medição / Outro
+- **ID**: código único do item (ex: `NB-001`, `CEL-003`). Você escolhe o formato.
+- **Categoria**: Notebook / Celular / Mouse / Teclado / Mousepad / Suporte / Adaptador de Tela / Monitor / Outro
 - **Status**: Em estoque / Com colaborador / Em projeto / Em manutenção / Fora de uso
-- **RequerCalibracao**: Sim ou Não (só "Sim" entra nos avisos de calibração do painel)
+
+Esta aba é só para patrimônio de TI alocado a colaboradores. Equipamentos de medição/laboratório
+(com calibração e locação a projetos) vivem na aba `Equipamentos` — ver abaixo.
+
+## Aba `Equipamentos` (medição/laboratório)
+
+| ID | Descricao | Marca | NumeroSerie | DataCompra | ValorPago | Fornecedor | Status | ColaboradorAtual | LocalArmazenamento | UltimaCalibracao | ProximaCalibracao | NumeroCertificadoCalibracao | Observacoes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+
+- **ID**: código único do equipamento (ex: `MP-01`, `BA-02`) — mantenha os códigos que já existem no
+  `LEMCC-V02.xlsx` e no `PT-005-F02-V03.xlsx`.
+- **Status**: Em estoque / Em locação / Em manutenção / Fora de uso
+- **ColaboradorAtual**: quando `Status = Em locação`, é o solicitante/técnico responsável atual.
+- Toda calibração e locação (empréstimo a projeto) é feita a partir desta aba, na tela
+  "Equipamentos" do site.
 
 ## Aba `Movimentacoes`
 
@@ -24,7 +37,9 @@ si não importa para o sistema, mas facilita conferir visualmente).
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 Preenchida automaticamente pelo sistema — você não precisa digitar nada aqui manualmente, só deixar a
-aba criada com os cabeçalhos.
+aba criada com os cabeçalhos. **Esta aba é compartilhada** entre `Itens` e `Equipamentos` (o
+`ItemID` aponta para um código de qualquer uma das duas abas) — é o que permite o custo por projeto
+e o histórico de "últimas movimentações" ficarem consolidados num só lugar.
 
 ## Aba `Colaboradores`
 

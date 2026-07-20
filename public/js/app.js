@@ -1,10 +1,12 @@
 import { MODO_DEMO, api } from './api.js';
 import { icons } from './icons.js';
-import { formatarData, iniciaisNome } from './util.js';
+import { formatarData, iniciaisNome, linkDoAviso } from './util.js';
 import { viewLogin } from './views/login.js';
 import { viewDashboard } from './views/dashboard.js';
 import { viewItens, viewItemForm } from './views/itens.js';
 import { viewItemDetalhe } from './views/itemDetalhe.js';
+import { viewEquipamentos, viewEquipamentoForm } from './views/equipamentos.js';
+import { viewEquipamentoDetalhe } from './views/equipamentoDetalhe.js';
 import { viewEntrada } from './views/entrada.js';
 import { viewSaida } from './views/saida.js';
 import { viewColaboradores } from './views/colaboradores.js';
@@ -29,6 +31,9 @@ const ROTAS = [
   { padrao: /^#\/itens$/, view: viewItens },
   { padrao: /^#\/itens\/novo$/, view: viewItemForm },
   { padrao: /^#\/item\/([^/]+)$/, view: viewItemDetalhe, params: ['id'] },
+  { padrao: /^#\/equipamentos$/, view: viewEquipamentos },
+  { padrao: /^#\/equipamentos\/novo$/, view: viewEquipamentoForm },
+  { padrao: /^#\/equipamento\/([^/]+)$/, view: viewEquipamentoDetalhe, params: ['id'] },
   { padrao: /^#\/entrada$/, view: viewEntrada },
   { padrao: /^#\/saida$/, view: viewSaida },
   { padrao: /^#\/colaboradores$/, view: viewColaboradores },
@@ -40,6 +45,7 @@ const ROTAS = [
 const ITENS_MENU = [
   ['#/', 'Painel', 'painel'],
   ['#/itens', 'Itens', 'box'],
+  ['#/equipamentos', 'Equipamentos', 'equipamento'],
   ['#/entrada', 'Entrada', 'entrada'],
   ['#/saida', 'Saída', 'saida'],
   ['#/colaboradores', 'Colaboradores', 'colaboradores'],
@@ -153,7 +159,7 @@ async function abrirDropdownNotificacoes() {
       ${avisos.length === 0
         ? '<div class="vazio">Nenhum aviso no momento.</div>'
         : avisos.slice(0, 8).map((a) => `
-          <a class="item" href="#/item/${encodeURIComponent(a.id)}" style="display:block">
+          <a class="item" href="${linkDoAviso(a)}" style="display:block">
             <strong>${a.tipo}</strong> — ${a.descricao || a.id}<br/>
             <span style="color:var(--text-muted)">vence em ${formatarData(a.data)} ${a.diasRestantes < 0 ? '(vencido)' : `(${a.diasRestantes}d)`}</span>
           </a>

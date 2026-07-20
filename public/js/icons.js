@@ -10,6 +10,7 @@ export const icons = {
   saida: BASE('<path d="M12 19V8"/><path d="M18 13l-6-6-6 6"/><path d="M4 20h16"/>'),
   colaboradores: BASE('<circle cx="9" cy="8" r="3.2"/><path d="M2.5 19c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5"/><circle cx="17" cy="8.5" r="2.6"/><path d="M15.7 13.6c2.9.4 5.3 2.3 5.3 5.4"/>'),
   projetos: BASE('<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8A2 2 0 0 1 21 9.5V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>'),
+  equipamento: BASE('<circle cx="12" cy="13" r="8"/><path d="M12 13l3.2-3.2"/><path d="M9 3h6"/><path d="M12 13m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>'),
   frasco: BASE('<path d="M9 2h6"/><path d="M10 2v6.2L4.7 17a2 2 0 0 0 1.7 3h11.2a2 2 0 0 0 1.7-3L14 8.2V2"/><path d="M7.5 14h9"/>'),
   etiqueta: BASE('<path d="M3 11.5V5a2 2 0 0 1 2-2h6.5a2 2 0 0 1 1.4.6l8 8a2 2 0 0 1 0 2.8l-6.5 6.5a2 2 0 0 1-2.8 0l-8-8A2 2 0 0 1 3 11.5z"/><circle cx="8" cy="8" r="1.4"/>'),
   alerta: BASE('<path d="M10.6 3.6L2.2 18a1.8 1.8 0 0 0 1.5 2.7h16.6a1.8 1.8 0 0 0 1.5-2.7L13.4 3.6a1.8 1.8 0 0 0-2.8 0z"/><path d="M12 9.5v4.2"/><path d="M12 17.2h.01"/>'),

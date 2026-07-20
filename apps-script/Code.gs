@@ -2,8 +2,13 @@
  * Backend do Sistema de Controle de Insumos, Patrimônio e Equipamentos.
  * Cole este arquivo no editor do Google Apps Script (script.google.com),
  * ligado a uma planilha Google Sheets com as abas:
- *   Itens, Movimentacoes, Colaboradores, Projetos, MateriaisReferencia
+ *   Itens, Equipamentos, Movimentacoes, Colaboradores, Projetos, MateriaisReferencia
  * (ver docs/planilha-modelo.md para os cabeçalhos exatos de cada aba).
+ *
+ * Itens = patrimônio de TI (notebook, celular, mouse etc.), alocado a colaboradores.
+ * Equipamentos = equipamentos de medição/laboratório, com calibração e locação a projetos.
+ * Movimentacoes é compartilhada pelos dois, para manter um histórico único e o custo
+ * por projeto consolidado.
  *
  * Configuração necessária (menu Configuração do projeto > Propriedades do script):
  *   SHEET_ID     -> ID da planilha (está na URL entre /d/ e /edit)
@@ -115,7 +120,7 @@ function doPost(e) {
   }
 }
 
-var READ_ACTIONS_ = ['listItens', 'getItem', 'listMovimentacoes', 'listColaboradores', 'listProjetos', 'custoPorProjeto', 'listMateriaisReferencia', 'avisos'];
+var READ_ACTIONS_ = ['listItens', 'getItem', 'listEquipamentos', 'getEquipamento', 'listMovimentacoes', 'listColaboradores', 'listProjetos', 'custoPorProjeto', 'listMateriaisReferencia', 'avisos'];
 
 function routeAny_(action, params) {
   return READ_ACTIONS_.indexOf(action) !== -1 ? routeRead_(action, params) : routeWrite_(action, params);
@@ -127,6 +132,10 @@ function routeRead_(action, params) {
       return sheetToObjects_(getSheet_('Itens'));
     case 'getItem':
       return getItem_(params.id);
+    case 'listEquipamentos':
+      return sheetToObjects_(getSheet_('Equipamentos'));
+    case 'getEquipamento':
+      return getEquipamento_(params.id);
     case 'listMovimentacoes':
       return listMovimentacoes_(params.itemId);
     case 'listColaboradores':
@@ -156,8 +165,14 @@ function routeWrite_(action, payload) {
       return registrarSaidaProjeto_(payload);
     case 'registrarDevolucao':
       return registrarDevolucao_(payload);
-    case 'registrarCalibracao':
-      return registrarCalibracao_(payload);
+    case 'criarEquipamento':
+      return criarEquipamento_(payload);
+    case 'registrarLocacao':
+      return registrarLocacao_(payload);
+    case 'registrarDevolucaoEquipamento':
+      return registrarDevolucaoEquipamento_(payload);
+    case 'registrarCalibracaoEquipamento':
+      return registrarCalibracaoEquipamento_(payload);
     case 'criarColaborador':
       return criarColaborador_(payload);
     case 'criarProjeto':
@@ -196,10 +211,6 @@ function criarItem_(p) {
     Status: p.Status || 'Em estoque',
     ColaboradorAtual: p.ColaboradorAtual || '',
     LocalArmazenamento: p.LocalArmazenamento || '',
-    RequerCalibracao: p.RequerCalibracao || 'Não',
-    UltimaCalibracao: p.UltimaCalibracao || '',
-    ProximaCalibracao: p.ProximaCalibracao || '',
-    NumeroCertificadoCalibracao: p.NumeroCertificadoCalibracao || '',
     Observacoes: p.Observacoes || ''
   });
   return { ID: p.ID };
@@ -317,15 +328,88 @@ function registrarDevolucao_(p) {
   return mov;
 }
 
-function registrarCalibracao_(p) {
-  if (!p.ItemID || !p.ProximaCalibracao) throw new Error('Informe o item e a próxima calibração.');
-  var itens = getSheet_('Itens');
+// ---------------------------------------------------------------------------
+// Equipamentos (medição/laboratório): cadastro, locação a projetos, calibração
+// ---------------------------------------------------------------------------
+
+function getEquipamento_(id) {
+  var equipamento = sheetToObjects_(getSheet_('Equipamentos')).filter(function (e) { return String(e.ID) === String(id); })[0];
+  if (!equipamento) throw new Error('Equipamento não encontrado: ' + id);
+  equipamento.historico = listMovimentacoes_(id);
+  return equipamento;
+}
+
+function criarEquipamento_(p) {
+  if (!p.ID) throw new Error('Informe o código do equipamento (ID).');
+  var sheet = getSheet_('Equipamentos');
+  if (findRowIndexById_(sheet, 'ID', p.ID) !== -1) throw new Error('Já existe um equipamento com este código: ' + p.ID);
+  appendObject_(sheet, {
+    ID: p.ID,
+    Descricao: p.Descricao || '',
+    Marca: p.Marca || '',
+    NumeroSerie: p.NumeroSerie || '',
+    DataCompra: p.DataCompra || '',
+    ValorPago: toNumber_(p.ValorPago),
+    Fornecedor: p.Fornecedor || '',
+    Status: p.Status || 'Em estoque',
+    ColaboradorAtual: p.ColaboradorAtual || '',
+    LocalArmazenamento: p.LocalArmazenamento || '',
+    UltimaCalibracao: p.UltimaCalibracao || '',
+    ProximaCalibracao: p.ProximaCalibracao || '',
+    NumeroCertificadoCalibracao: p.NumeroCertificadoCalibracao || '',
+    Observacoes: p.Observacoes || ''
+  });
+  return { ID: p.ID };
+}
+
+function registrarLocacao_(p) {
+  if (!p.ItemID || !p.ProjetoDestino || !p.ColaboradorEnvolvido) {
+    throw new Error('Informe equipamento, projeto e solicitante.');
+  }
+  var equipamentos = getSheet_('Equipamentos');
+  var mov = registrarMovimentacao_({
+    ItemID: p.ItemID,
+    Tipo: 'Locacao-Equipamento',
+    ValorUnitario: p.ValorUnitario,
+    Quantidade: p.Quantidade,
+    ProjetoDestino: p.ProjetoDestino,
+    ColaboradorEnvolvido: p.ColaboradorEnvolvido,
+    DataDevolucaoPrevista: p.DataDevolucaoPrevista || '',
+    Observacoes: p.Observacoes
+  });
+  updateRowById_(equipamentos, 'ID', p.ItemID, {
+    Status: 'Em locação',
+    ColaboradorAtual: p.ColaboradorEnvolvido
+  });
+  return mov;
+}
+
+function registrarDevolucaoEquipamento_(p) {
+  if (!p.ItemID) throw new Error('Informe o equipamento devolvido.');
+  var equipamentos = getSheet_('Equipamentos');
+  var mov = registrarMovimentacao_({
+    ItemID: p.ItemID,
+    Tipo: 'Devolucao-Equipamento',
+    ChecadoPor: p.ChecadoPor,
+    DataDevolucaoReal: p.DataDevolucaoReal || new Date(),
+    Observacoes: p.Observacoes
+  });
+  updateRowById_(equipamentos, 'ID', p.ItemID, {
+    Status: 'Em estoque',
+    ColaboradorAtual: ''
+  });
+  return mov;
+}
+
+function registrarCalibracaoEquipamento_(p) {
+  if (!p.ItemID || !p.ProximaCalibracao) throw new Error('Informe o equipamento e a próxima calibração.');
+  var equipamentos = getSheet_('Equipamentos');
   var mov = registrarMovimentacao_({
     ItemID: p.ItemID,
     Tipo: 'Calibracao',
     Observacoes: p.Observacoes
   });
-  updateRowById_(itens, 'ID', p.ItemID, {
+  updateRowById_(equipamentos, 'ID', p.ItemID, {
     UltimaCalibracao: p.UltimaCalibracao || new Date(),
     ProximaCalibracao: p.ProximaCalibracao,
     NumeroCertificadoCalibracao: p.NumeroCertificadoCalibracao || ''
@@ -402,10 +486,10 @@ function diasAte_(dataStr) {
 }
 
 function avisos_(diasAntecedencia) {
-  var calibracoes = sheetToObjects_(getSheet_('Itens'))
-    .filter(function (i) { return i.RequerCalibracao === 'Sim' && i.ProximaCalibracao; })
-    .map(function (i) {
-      return { tipo: 'Calibração', id: i.ID, descricao: i.Descricao, data: i.ProximaCalibracao, diasRestantes: diasAte_(i.ProximaCalibracao) };
+  var calibracoes = sheetToObjects_(getSheet_('Equipamentos'))
+    .filter(function (e) { return e.ProximaCalibracao; })
+    .map(function (e) {
+      return { tipo: 'Calibração', id: e.ID, descricao: e.Descricao, data: e.ProximaCalibracao, diasRestantes: diasAte_(e.ProximaCalibracao) };
     })
     .filter(function (a) { return a.diasRestantes !== null && a.diasRestantes <= diasAntecedencia; });
 

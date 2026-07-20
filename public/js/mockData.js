@@ -13,9 +13,11 @@ function semanasA(dias) {
 function seed() {
   return {
     itens: [
-      { ID: 'NB-001', Categoria: 'Notebook', Descricao: 'Lenovo IdeaPad S145', Marca: 'Lenovo', NumeroSerie: 'SN-0001', DataCompra: '2023-02-10', ValorPago: 3200, Fornecedor: 'Fornecedor Exemplo', Status: 'Com colaborador', ColaboradorAtual: 'Colaborador Exemplo', LocalArmazenamento: '', RequerCalibracao: 'Não', UltimaCalibracao: '', ProximaCalibracao: '', NumeroCertificadoCalibracao: '', Observacoes: '' },
-      { ID: 'CEL-001', Categoria: 'Celular', Descricao: 'Motorola G9', Marca: 'Motorola', NumeroSerie: 'SN-0002', DataCompra: '2023-02-10', ValorPago: 900, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Armário TI', RequerCalibracao: 'Não', UltimaCalibracao: '', ProximaCalibracao: '', NumeroCertificadoCalibracao: '', Observacoes: '' },
-      { ID: 'MP-01', Categoria: 'Equipamento de Medição', Descricao: 'Medidor Multiparâmetro HI 98194', Marca: 'Hanna', NumeroSerie: '5090070101', DataCompra: '2022-05-01', ValorPago: 8500, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Sala da Logística', RequerCalibracao: 'Sim', UltimaCalibracao: '2025-08-01', ProximaCalibracao: semanasA(20), NumeroCertificadoCalibracao: 'CERT-1234', Observacoes: '' }
+      { ID: 'NB-001', Categoria: 'Notebook', Descricao: 'Lenovo IdeaPad S145', Marca: 'Lenovo', NumeroSerie: 'SN-0001', DataCompra: '2023-02-10', ValorPago: 3200, Fornecedor: 'Fornecedor Exemplo', Status: 'Com colaborador', ColaboradorAtual: 'Colaborador Exemplo', LocalArmazenamento: '', Observacoes: '' },
+      { ID: 'CEL-001', Categoria: 'Celular', Descricao: 'Motorola G9', Marca: 'Motorola', NumeroSerie: 'SN-0002', DataCompra: '2023-02-10', ValorPago: 900, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Armário TI', Observacoes: '' }
+    ],
+    equipamentos: [
+      { ID: 'MP-01', Descricao: 'Medidor Multiparâmetro HI 98194', Marca: 'Hanna', NumeroSerie: '5090070101', DataCompra: '2022-05-01', ValorPago: 8500, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Sala da Logística', UltimaCalibracao: '2025-08-01', ProximaCalibracao: semanasA(20), NumeroCertificadoCalibracao: 'CERT-1234', Observacoes: '' }
     ],
     movimentacoes: [
       { ID: 'MOV-EX0001', DataHora: '2023-02-10T10:00:00', ItemID: 'NB-001', Tipo: 'Entrada-Compra', Quantidade: 1, ValorUnitario: 3200, Fornecedor: 'Fornecedor Exemplo', ProjetoDestino: '', ColaboradorEnvolvido: '', ChecadoPor: '', DataDevolucaoPrevista: '', DataDevolucaoReal: '', Observacoes: 'Registro de exemplo' },
@@ -42,7 +44,9 @@ function carregar() {
     localStorage.setItem(CHAVE, JSON.stringify(inicial));
     return inicial;
   }
-  return JSON.parse(bruto);
+  const db = JSON.parse(bruto);
+  if (!db.equipamentos) db.equipamentos = [];
+  return db;
 }
 
 function salvar(db) {
@@ -93,6 +97,12 @@ function acharItem(db, id) {
   return item;
 }
 
+function acharEquipamento(db, id) {
+  const equipamento = db.equipamentos.find((e) => String(e.ID) === String(id));
+  if (!equipamento) throw new Error('Equipamento não encontrado: ' + id);
+  return equipamento;
+}
+
 export function mockCall(action, payload = {}) {
   const db = carregar();
   let resultado;
@@ -104,6 +114,14 @@ export function mockCall(action, payload = {}) {
     case 'getItem': {
       const item = acharItem(db, payload.id);
       resultado = { ...item, historico: db.movimentacoes.filter((m) => String(m.ItemID) === String(payload.id)) };
+      break;
+    }
+    case 'listEquipamentos':
+      resultado = db.equipamentos;
+      break;
+    case 'getEquipamento': {
+      const equipamento = acharEquipamento(db, payload.id);
+      resultado = { ...equipamento, historico: db.movimentacoes.filter((m) => String(m.ItemID) === String(payload.id)) };
       break;
     }
     case 'listMovimentacoes':
@@ -130,9 +148,9 @@ export function mockCall(action, payload = {}) {
     }
     case 'avisos': {
       const dias = payload.dias || 60;
-      const calibracoes = db.itens
-        .filter((i) => i.RequerCalibracao === 'Sim' && i.ProximaCalibracao)
-        .map((i) => ({ tipo: 'Calibração', id: i.ID, descricao: i.Descricao, data: i.ProximaCalibracao, diasRestantes: diasAte(i.ProximaCalibracao) }))
+      const calibracoes = db.equipamentos
+        .filter((e) => e.ProximaCalibracao)
+        .map((e) => ({ tipo: 'Calibração', id: e.ID, descricao: e.Descricao, data: e.ProximaCalibracao, diasRestantes: diasAte(e.ProximaCalibracao) }))
         .filter((a) => a.diasRestantes !== null && a.diasRestantes <= dias);
       const validades = db.materiaisReferencia
         .filter((m) => m.Validade && m.Status !== 'Descartado')
@@ -148,9 +166,7 @@ export function mockCall(action, payload = {}) {
         ID: payload.ID, Categoria: payload.Categoria || '', Descricao: payload.Descricao || '', Marca: payload.Marca || '',
         NumeroSerie: payload.NumeroSerie || '', DataCompra: payload.DataCompra || '', ValorPago: Number(payload.ValorPago) || 0,
         Fornecedor: payload.Fornecedor || '', Status: payload.Status || 'Em estoque', ColaboradorAtual: payload.ColaboradorAtual || '',
-        LocalArmazenamento: payload.LocalArmazenamento || '', RequerCalibracao: payload.RequerCalibracao || 'Não',
-        UltimaCalibracao: payload.UltimaCalibracao || '', ProximaCalibracao: payload.ProximaCalibracao || '',
-        NumeroCertificadoCalibracao: payload.NumeroCertificadoCalibracao || '', Observacoes: payload.Observacoes || ''
+        LocalArmazenamento: payload.LocalArmazenamento || '', Observacoes: payload.Observacoes || ''
       };
       db.itens.push(item);
       resultado = { ID: item.ID };
@@ -186,12 +202,41 @@ export function mockCall(action, payload = {}) {
       item.ColaboradorAtual = '';
       break;
     }
-    case 'registrarCalibracao': {
-      const item = acharItem(db, payload.ItemID);
+    case 'criarEquipamento': {
+      if (!payload.ID) throw new Error('Informe o código do equipamento (ID).');
+      if (db.equipamentos.some((e) => e.ID === payload.ID)) throw new Error('Já existe um equipamento com este código: ' + payload.ID);
+      const equipamento = {
+        ID: payload.ID, Descricao: payload.Descricao || '', Marca: payload.Marca || '',
+        NumeroSerie: payload.NumeroSerie || '', DataCompra: payload.DataCompra || '', ValorPago: Number(payload.ValorPago) || 0,
+        Fornecedor: payload.Fornecedor || '', Status: payload.Status || 'Em estoque', ColaboradorAtual: payload.ColaboradorAtual || '',
+        LocalArmazenamento: payload.LocalArmazenamento || '', UltimaCalibracao: payload.UltimaCalibracao || '',
+        ProximaCalibracao: payload.ProximaCalibracao || '', NumeroCertificadoCalibracao: payload.NumeroCertificadoCalibracao || '',
+        Observacoes: payload.Observacoes || ''
+      };
+      db.equipamentos.push(equipamento);
+      resultado = { ID: equipamento.ID };
+      break;
+    }
+    case 'registrarLocacao': {
+      const equipamento = acharEquipamento(db, payload.ItemID);
+      resultado = registrarMovimentacao(db, { ...payload, Tipo: 'Locacao-Equipamento' });
+      equipamento.Status = 'Em locação';
+      equipamento.ColaboradorAtual = payload.ColaboradorEnvolvido;
+      break;
+    }
+    case 'registrarDevolucaoEquipamento': {
+      const equipamento = acharEquipamento(db, payload.ItemID);
+      resultado = registrarMovimentacao(db, { ...payload, Tipo: 'Devolucao-Equipamento', DataDevolucaoReal: payload.DataDevolucaoReal || new Date().toISOString().slice(0, 10) });
+      equipamento.Status = 'Em estoque';
+      equipamento.ColaboradorAtual = '';
+      break;
+    }
+    case 'registrarCalibracaoEquipamento': {
+      const equipamento = acharEquipamento(db, payload.ItemID);
       resultado = registrarMovimentacao(db, { ...payload, Tipo: 'Calibracao' });
-      item.UltimaCalibracao = payload.UltimaCalibracao || new Date().toISOString().slice(0, 10);
-      item.ProximaCalibracao = payload.ProximaCalibracao;
-      item.NumeroCertificadoCalibracao = payload.NumeroCertificadoCalibracao || '';
+      equipamento.UltimaCalibracao = payload.UltimaCalibracao || new Date().toISOString().slice(0, 10);
+      equipamento.ProximaCalibracao = payload.ProximaCalibracao;
+      equipamento.NumeroCertificadoCalibracao = payload.NumeroCertificadoCalibracao || '';
       break;
     }
     case 'criarColaborador':

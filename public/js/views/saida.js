@@ -18,11 +18,11 @@ export async function viewSaida(main) {
       <label>Tipo de saída
         <select id="tipo-saida">
           <option value="colaborador">Alocar a um colaborador (ex: notebook, celular)</option>
-          <option value="projeto">Empréstimo/uso destinado a um projeto (ex: equipamento de medição)</option>
+          <option value="projeto">Uso/consumo destinado a um projeto (ex: insumo comprado para um projeto específico)</option>
         </select>
       </label>
       <div id="area-form" style="margin-top:14px"></div>
-      <p class="ajuda">Só aparecem aqui itens com status "Em estoque". Se o item que você procura não está na lista, verifique a <a href="#/itens">página de Itens</a> — ele pode já estar alocado.</p>
+      <p class="ajuda">Só aparecem aqui itens com status "Em estoque". Se o item que você procura não está na lista, verifique a <a href="#/itens">página de Itens</a> — ele pode já estar alocado. Para locação de equipamentos de medição, use a página <a href="#/equipamentos">Equipamentos</a>.</p>
     </div>
   `;
 

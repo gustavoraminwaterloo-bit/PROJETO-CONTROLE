@@ -88,10 +88,13 @@ nome em **Site settings → Site details → Change site name**.
 - Cadastre os itens (**Itens → Novo item**), depois registre a entrada de compra (**Entrada**).
 - Para tirar algo do estoque, use **Saída** (ou a página do próprio item) — escolhendo se é para um
   colaborador (fica com ele) ou para um projeto (registra retirada/devolução e custo).
+- Equipamentos de medição/laboratório (com calibração e locação a projetos) ficam separados em
+  **Equipamentos** — cadastre lá, e use "Registrar locação"/"Registrar devolução"/"Registrar
+  calibração" na página de cada equipamento.
 - Gere e imprima as etiquetas de QR Code em **Etiquetas** — ajuste o tamanho conforme sua impressora
-  térmica antes de imprimir. Cada QR abre a página de histórico daquele item.
-- O **Painel** mostra avisos de calibração e validade de materiais de referência vencendo nos
-  próximos 60 dias.
+  térmica antes de imprimir. Cada QR abre a página de histórico daquele item/equipamento.
+- O **Painel** mostra avisos de calibração de equipamentos e validade de materiais de referência
+  vencendo nos próximos 60 dias.
 
 ## Testando sem publicar ainda
 

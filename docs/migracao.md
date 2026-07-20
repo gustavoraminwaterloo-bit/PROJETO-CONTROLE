@@ -14,9 +14,10 @@ que vale conferir).
 
 ## 2. Equipamentos de medição (LEMCC-V02.xlsx)
 
-Para cada linha da aba "EM USO_AT" do `LEMCC-V02.xlsx`:
+Para cada linha da aba "EM USO_AT" do `LEMCC-V02.xlsx`, cadastre na aba **`Equipamentos`** (não em
+`Itens` — equipamentos de medição têm aba própria, com calibração e locação a projetos):
 
-| Campo no LEMCC | Vira no sistema (aba `Itens`) |
+| Campo no LEMCC | Vira no sistema (aba `Equipamentos`) |
 |---|---|
 | Código Interno | ID |
 | Descrição | Descricao |
@@ -27,9 +28,8 @@ Para cada linha da aba "EM USO_AT" do `LEMCC-V02.xlsx`:
 | Próxima calibração | ProximaCalibracao |
 | Nº Certificado | NumeroCertificadoCalibracao |
 
-Defina `Categoria = Equipamento de Medição`, `RequerCalibracao = Sim`, `Status = Em estoque` (ou
-`Com colaborador` se já souber quem está com ele) e `LocalArmazenamento` conforme o de costume
-(ex: "Sala da Logística").
+Defina `Status = Em estoque` (ou `Em locação` se já souber com qual projeto/técnico está) e
+`LocalArmazenamento` conforme o de costume (ex: "Sala da Logística").
 
 Os equipamentos da aba "FORA DE USO" podem entrar com `Status = Fora de uso`.
 
@@ -37,9 +37,9 @@ Os equipamentos da aba "FORA DE USO" podem entrar com `Status = Fora de uso`.
 
 Este arquivo tem uma aba por equipamento com um log de retiradas. Você **não precisa** importar todo
 o histórico antigo — se quiser manter só o mais recente/relevante como referência, registre no
-sistema (tela "Saída", ou direto na página do item) as retiradas que ainda estão em aberto (sem
-"Data Devolução" preenchida), assim o sistema já nasce refletindo a realidade atual: quem está com
-o quê.
+sistema (tela "Equipamentos" → abra o equipamento → "Registrar locação") as retiradas que ainda
+estão em aberto (sem "Data Devolução" preenchida), assim o sistema já nasce refletindo a realidade
+atual: quem está com o quê.
 
 ## 4. Materiais de referência (PT 007 - Materiais de Referência.docx)
 

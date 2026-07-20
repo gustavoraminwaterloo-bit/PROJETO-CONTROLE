@@ -2,12 +2,13 @@
  * Backend do Sistema de Controle de Insumos, Patrimônio e Equipamentos.
  * Cole este arquivo no editor do Google Apps Script (script.google.com),
  * ligado a uma planilha Google Sheets com as abas:
- *   Itens, Equipamentos, Movimentacoes, Colaboradores, Projetos, MateriaisReferencia
+ *   Itens, Equipamentos, Veiculos, Movimentacoes, Colaboradores, Projetos, MateriaisReferencia
  * (ver docs/planilha-modelo.md para os cabeçalhos exatos de cada aba).
  *
  * Itens = patrimônio de TI (notebook, celular, mouse etc.), alocado a colaboradores.
  * Equipamentos = equipamentos de medição/laboratório, com calibração e locação a projetos.
- * Movimentacoes é compartilhada pelos dois, para manter um histórico único e o custo
+ * Veiculos = carros da frota, alocados de forma fixa a colaboradores (mesmo padrão de Itens).
+ * Movimentacoes é compartilhada pelas três, para manter um histórico único e o custo
  * por projeto consolidado.
  *
  * Configuração necessária (menu Configuração do projeto > Propriedades do script):
@@ -120,7 +121,7 @@ function doPost(e) {
   }
 }
 
-var READ_ACTIONS_ = ['listItens', 'getItem', 'listEquipamentos', 'getEquipamento', 'listMovimentacoes', 'listColaboradores', 'listProjetos', 'custoPorProjeto', 'listMateriaisReferencia', 'avisos'];
+var READ_ACTIONS_ = ['listItens', 'getItem', 'listEquipamentos', 'getEquipamento', 'listVeiculos', 'getVeiculo', 'listMovimentacoes', 'listColaboradores', 'listProjetos', 'custoPorProjeto', 'listMateriaisReferencia', 'avisos'];
 
 function routeAny_(action, params) {
   return READ_ACTIONS_.indexOf(action) !== -1 ? routeRead_(action, params) : routeWrite_(action, params);
@@ -136,6 +137,10 @@ function routeRead_(action, params) {
       return sheetToObjects_(getSheet_('Equipamentos'));
     case 'getEquipamento':
       return getEquipamento_(params.id);
+    case 'listVeiculos':
+      return sheetToObjects_(getSheet_('Veiculos'));
+    case 'getVeiculo':
+      return getVeiculo_(params.id);
     case 'listMovimentacoes':
       return listMovimentacoes_(params.itemId);
     case 'listColaboradores':
@@ -173,6 +178,8 @@ function routeWrite_(action, payload) {
       return registrarDevolucaoEquipamento_(payload);
     case 'registrarCalibracaoEquipamento':
       return registrarCalibracaoEquipamento_(payload);
+    case 'criarVeiculo':
+      return criarVeiculo_(payload);
     case 'criarColaborador':
       return criarColaborador_(payload);
     case 'criarProjeto':
@@ -270,9 +277,18 @@ function registrarEntrada_(p) {
   return mov;
 }
 
+function encontrarSheetDoAlvo_(id) {
+  var candidatos = ['Itens', 'Veiculos'];
+  for (var i = 0; i < candidatos.length; i++) {
+    var sheet = getSheet_(candidatos[i]);
+    if (findRowIndexById_(sheet, 'ID', id) !== -1) return sheet;
+  }
+  throw new Error('Item/veículo não encontrado: ' + id);
+}
+
 function alocarColaborador_(p) {
   if (!p.ItemID || !p.ColaboradorEnvolvido) throw new Error('Informe o item e o colaborador.');
-  var itens = getSheet_('Itens');
+  var sheet = encontrarSheetDoAlvo_(p.ItemID);
   var mov = registrarMovimentacao_({
     ItemID: p.ItemID,
     Tipo: 'Alocacao-Colaborador',
@@ -282,7 +298,7 @@ function alocarColaborador_(p) {
     Quantidade: p.Quantidade,
     Observacoes: p.Observacoes
   });
-  updateRowById_(itens, 'ID', p.ItemID, {
+  updateRowById_(sheet, 'ID', p.ItemID, {
     Status: 'Com colaborador',
     ColaboradorAtual: p.ColaboradorEnvolvido
   });
@@ -313,7 +329,7 @@ function registrarSaidaProjeto_(p) {
 
 function registrarDevolucao_(p) {
   if (!p.ItemID) throw new Error('Informe o item devolvido.');
-  var itens = getSheet_('Itens');
+  var sheet = encontrarSheetDoAlvo_(p.ItemID);
   var mov = registrarMovimentacao_({
     ItemID: p.ItemID,
     Tipo: 'Devolucao',
@@ -321,7 +337,7 @@ function registrarDevolucao_(p) {
     DataDevolucaoReal: p.DataDevolucaoReal || new Date(),
     Observacoes: p.Observacoes
   });
-  updateRowById_(itens, 'ID', p.ItemID, {
+  updateRowById_(sheet, 'ID', p.ItemID, {
     Status: 'Em estoque',
     ColaboradorAtual: ''
   });
@@ -415,6 +431,39 @@ function registrarCalibracaoEquipamento_(p) {
     NumeroCertificadoCalibracao: p.NumeroCertificadoCalibracao || ''
   });
   return mov;
+}
+
+// ---------------------------------------------------------------------------
+// Veículos: cadastro e alocação fixa a colaborador (reaproveita alocarColaborador_/registrarDevolucao_)
+// ---------------------------------------------------------------------------
+
+function getVeiculo_(id) {
+  var veiculo = sheetToObjects_(getSheet_('Veiculos')).filter(function (v) { return String(v.ID) === String(id); })[0];
+  if (!veiculo) throw new Error('Veículo não encontrado: ' + id);
+  veiculo.historico = listMovimentacoes_(id);
+  return veiculo;
+}
+
+function criarVeiculo_(p) {
+  if (!p.ID) throw new Error('Informe o código do veículo (ID).');
+  var sheet = getSheet_('Veiculos');
+  if (findRowIndexById_(sheet, 'ID', p.ID) !== -1) throw new Error('Já existe um veículo com este código: ' + p.ID);
+  appendObject_(sheet, {
+    ID: p.ID,
+    Placa: p.Placa || '',
+    Descricao: p.Descricao || '',
+    Marca: p.Marca || '',
+    Ano: p.Ano || '',
+    Quilometragem: toNumber_(p.Quilometragem),
+    DataCompra: p.DataCompra || '',
+    ValorPago: toNumber_(p.ValorPago),
+    Fornecedor: p.Fornecedor || '',
+    Status: p.Status || 'Em estoque',
+    ColaboradorAtual: p.ColaboradorAtual || '',
+    LocalArmazenamento: p.LocalArmazenamento || '',
+    Observacoes: p.Observacoes || ''
+  });
+  return { ID: p.ID };
 }
 
 // ---------------------------------------------------------------------------

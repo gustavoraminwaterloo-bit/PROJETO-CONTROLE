@@ -19,6 +19,9 @@ function seed() {
     equipamentos: [
       { ID: 'MP-01', Descricao: 'Medidor Multiparâmetro HI 98194', Marca: 'Hanna', NumeroSerie: '5090070101', DataCompra: '2022-05-01', ValorPago: 8500, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Sala da Logística', UltimaCalibracao: '2025-08-01', ProximaCalibracao: semanasA(20), NumeroCertificadoCalibracao: 'CERT-1234', Observacoes: '' }
     ],
+    veiculos: [
+      { ID: 'CARRO-01', Placa: 'ABC1D23', Descricao: 'Fiat Strada', Marca: 'Fiat', Ano: '2022', Quilometragem: 32000, DataCompra: '2022-03-01', ValorPago: 95000, Fornecedor: 'Concessionária Exemplo', Status: 'Com colaborador', ColaboradorAtual: 'Fernando Luna', LocalArmazenamento: '', Observacoes: '' }
+    ],
     movimentacoes: [
       { ID: 'MOV-EX0001', DataHora: '2023-02-10T10:00:00', ItemID: 'NB-001', Tipo: 'Entrada-Compra', Quantidade: 1, ValorUnitario: 3200, Fornecedor: 'Fornecedor Exemplo', ProjetoDestino: '', ColaboradorEnvolvido: '', ChecadoPor: '', DataDevolucaoPrevista: '', DataDevolucaoReal: '', Observacoes: 'Registro de exemplo' },
       { ID: 'MOV-EX0002', DataHora: '2023-02-11T09:00:00', ItemID: 'NB-001', Tipo: 'Alocacao-Colaborador', Quantidade: 1, ValorUnitario: 0, Fornecedor: '', ProjetoDestino: '', ColaboradorEnvolvido: 'Colaborador Exemplo', ChecadoPor: '', DataDevolucaoPrevista: '', DataDevolucaoReal: '', Observacoes: '' }
@@ -46,6 +49,7 @@ function carregar() {
   }
   const db = JSON.parse(bruto);
   if (!db.equipamentos) db.equipamentos = [];
+  if (!db.veiculos) db.veiculos = [];
   return db;
 }
 
@@ -103,6 +107,20 @@ function acharEquipamento(db, id) {
   return equipamento;
 }
 
+function acharVeiculo(db, id) {
+  const veiculo = db.veiculos.find((v) => String(v.ID) === String(id));
+  if (!veiculo) throw new Error('Veículo não encontrado: ' + id);
+  return veiculo;
+}
+
+function acharAlvo(db, id) {
+  const item = db.itens.find((i) => String(i.ID) === String(id));
+  if (item) return item;
+  const veiculo = db.veiculos.find((v) => String(v.ID) === String(id));
+  if (veiculo) return veiculo;
+  throw new Error('Item/veículo não encontrado: ' + id);
+}
+
 export function mockCall(action, payload = {}) {
   const db = carregar();
   let resultado;
@@ -122,6 +140,14 @@ export function mockCall(action, payload = {}) {
     case 'getEquipamento': {
       const equipamento = acharEquipamento(db, payload.id);
       resultado = { ...equipamento, historico: db.movimentacoes.filter((m) => String(m.ItemID) === String(payload.id)) };
+      break;
+    }
+    case 'listVeiculos':
+      resultado = db.veiculos;
+      break;
+    case 'getVeiculo': {
+      const veiculo = acharVeiculo(db, payload.id);
+      resultado = { ...veiculo, historico: db.movimentacoes.filter((m) => String(m.ItemID) === String(payload.id)) };
       break;
     }
     case 'listMovimentacoes':
@@ -182,10 +208,10 @@ export function mockCall(action, payload = {}) {
       break;
     }
     case 'alocarColaborador': {
-      const item = acharItem(db, payload.ItemID);
+      const alvo = acharAlvo(db, payload.ItemID);
       resultado = registrarMovimentacao(db, { ...payload, Tipo: 'Alocacao-Colaborador' });
-      item.Status = 'Com colaborador';
-      item.ColaboradorAtual = payload.ColaboradorEnvolvido;
+      alvo.Status = 'Com colaborador';
+      alvo.ColaboradorAtual = payload.ColaboradorEnvolvido;
       break;
     }
     case 'registrarSaidaProjeto': {
@@ -196,10 +222,10 @@ export function mockCall(action, payload = {}) {
       break;
     }
     case 'registrarDevolucao': {
-      const item = acharItem(db, payload.ItemID);
+      const alvo = acharAlvo(db, payload.ItemID);
       resultado = registrarMovimentacao(db, { ...payload, Tipo: 'Devolucao', DataDevolucaoReal: payload.DataDevolucaoReal || new Date().toISOString().slice(0, 10) });
-      item.Status = 'Em estoque';
-      item.ColaboradorAtual = '';
+      alvo.Status = 'Em estoque';
+      alvo.ColaboradorAtual = '';
       break;
     }
     case 'criarEquipamento': {
@@ -237,6 +263,19 @@ export function mockCall(action, payload = {}) {
       equipamento.UltimaCalibracao = payload.UltimaCalibracao || new Date().toISOString().slice(0, 10);
       equipamento.ProximaCalibracao = payload.ProximaCalibracao;
       equipamento.NumeroCertificadoCalibracao = payload.NumeroCertificadoCalibracao || '';
+      break;
+    }
+    case 'criarVeiculo': {
+      if (!payload.ID) throw new Error('Informe o código do veículo (ID).');
+      if (db.veiculos.some((v) => v.ID === payload.ID)) throw new Error('Já existe um veículo com este código: ' + payload.ID);
+      const veiculo = {
+        ID: payload.ID, Placa: payload.Placa || '', Descricao: payload.Descricao || '', Marca: payload.Marca || '',
+        Ano: payload.Ano || '', Quilometragem: Number(payload.Quilometragem) || 0, DataCompra: payload.DataCompra || '',
+        ValorPago: Number(payload.ValorPago) || 0, Fornecedor: payload.Fornecedor || '', Status: payload.Status || 'Em estoque',
+        ColaboradorAtual: payload.ColaboradorAtual || '', LocalArmazenamento: payload.LocalArmazenamento || '', Observacoes: payload.Observacoes || ''
+      };
+      db.veiculos.push(veiculo);
+      resultado = { ID: veiculo.ID };
       break;
     }
     case 'criarColaborador':

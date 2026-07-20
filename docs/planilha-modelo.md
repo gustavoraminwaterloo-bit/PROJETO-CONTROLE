@@ -1,6 +1,6 @@
 # Planilha modelo (Google Sheets)
 
-Crie uma planilha nova no Google Sheets com exatamente estas 6 abas. Os nomes das abas e das colunas
+Crie uma planilha nova no Google Sheets com exatamente estas 7 abas. Os nomes das abas e das colunas
 precisam ser digitados **exatamente assim** (maiúsculas/minúsculas e acentos importam), porque o
 Apps Script (`apps-script/Code.gs`) lê e escreve usando esses nomes.
 
@@ -31,15 +31,26 @@ Esta aba é só para patrimônio de TI alocado a colaboradores. Equipamentos de 
 - Toda calibração e locação (empréstimo a projeto) é feita a partir desta aba, na tela
   "Equipamentos" do site.
 
+## Aba `Veiculos` (frota)
+
+| ID | Placa | Descricao | Marca | Ano | Quilometragem | DataCompra | ValorPago | Fornecedor | Status | ColaboradorAtual | LocalArmazenamento | Observacoes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+
+- **ID**: código único do veículo (ex: `CARRO-01`) — não use a placa como código, já que placa pode
+  mudar (ex: revalidação para o padrão Mercosul); guarde a placa no campo `Placa`.
+- **Status**: Em estoque / Com colaborador / Em manutenção / Fora de uso
+- Alocação e devolução de veículo funcionam igual à de `Itens` (alocação fixa a um colaborador,
+  normalmente um técnico) — usa as mesmas ações do sistema, só que na tela "Veículos".
+
 ## Aba `Movimentacoes`
 
 | ID | DataHora | ItemID | Tipo | Quantidade | ValorUnitario | Fornecedor | ProjetoDestino | ColaboradorEnvolvido | ChecadoPor | DataDevolucaoPrevista | DataDevolucaoReal | Observacoes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 Preenchida automaticamente pelo sistema — você não precisa digitar nada aqui manualmente, só deixar a
-aba criada com os cabeçalhos. **Esta aba é compartilhada** entre `Itens` e `Equipamentos` (o
-`ItemID` aponta para um código de qualquer uma das duas abas) — é o que permite o custo por projeto
-e o histórico de "últimas movimentações" ficarem consolidados num só lugar.
+aba criada com os cabeçalhos. **Esta aba é compartilhada** entre `Itens`, `Equipamentos` e
+`Veiculos` (o `ItemID` aponta para um código de qualquer uma das três abas) — é o que permite o
+custo por projeto e o histórico de "últimas movimentações" ficarem consolidados num só lugar.
 
 ## Aba `Colaboradores`
 

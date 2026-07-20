@@ -91,6 +91,9 @@ nome em **Site settings → Site details → Change site name**.
 - Equipamentos de medição/laboratório (com calibração e locação a projetos) ficam separados em
   **Equipamentos** — cadastre lá, e use "Registrar locação"/"Registrar devolução"/"Registrar
   calibração" na página de cada equipamento.
+- Veículos da frota ficam em **Veículos** — alocação fixa a um colaborador (normalmente um
+  técnico), igual ao fluxo de Itens. A página **Colaboradores** mostra, para cada pessoa, tudo que
+  ela tem no momento (itens de TI, veículo e equipamentos em locação).
 - Gere e imprima as etiquetas de QR Code em **Etiquetas** — ajuste o tamanho conforme sua impressora
   térmica antes de imprimir. Cada QR abre a página de histórico daquele item/equipamento.
 - O **Painel** mostra avisos de calibração de equipamentos e validade de materiais de referência

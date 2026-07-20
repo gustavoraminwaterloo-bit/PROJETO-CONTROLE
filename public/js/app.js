@@ -7,6 +7,8 @@ import { viewItens, viewItemForm } from './views/itens.js';
 import { viewItemDetalhe } from './views/itemDetalhe.js';
 import { viewEquipamentos, viewEquipamentoForm } from './views/equipamentos.js';
 import { viewEquipamentoDetalhe } from './views/equipamentoDetalhe.js';
+import { viewVeiculos, viewVeiculoForm } from './views/veiculos.js';
+import { viewVeiculoDetalhe } from './views/veiculoDetalhe.js';
 import { viewEntrada } from './views/entrada.js';
 import { viewSaida } from './views/saida.js';
 import { viewColaboradores } from './views/colaboradores.js';
@@ -34,6 +36,9 @@ const ROTAS = [
   { padrao: /^#\/equipamentos$/, view: viewEquipamentos },
   { padrao: /^#\/equipamentos\/novo$/, view: viewEquipamentoForm },
   { padrao: /^#\/equipamento\/([^/]+)$/, view: viewEquipamentoDetalhe, params: ['id'] },
+  { padrao: /^#\/veiculos$/, view: viewVeiculos },
+  { padrao: /^#\/veiculos\/novo$/, view: viewVeiculoForm },
+  { padrao: /^#\/veiculo\/([^/]+)$/, view: viewVeiculoDetalhe, params: ['id'] },
   { padrao: /^#\/entrada$/, view: viewEntrada },
   { padrao: /^#\/saida$/, view: viewSaida },
   { padrao: /^#\/colaboradores$/, view: viewColaboradores },
@@ -46,6 +51,7 @@ const ITENS_MENU = [
   ['#/', 'Painel', 'painel'],
   ['#/itens', 'Itens', 'box'],
   ['#/equipamentos', 'Equipamentos', 'equipamento'],
+  ['#/veiculos', 'Veículos', 'veiculo'],
   ['#/entrada', 'Entrada', 'entrada'],
   ['#/saida', 'Saída', 'saida'],
   ['#/colaboradores', 'Colaboradores', 'colaboradores'],

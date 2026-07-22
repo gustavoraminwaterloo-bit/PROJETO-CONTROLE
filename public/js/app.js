@@ -15,6 +15,7 @@ import { viewColaboradores } from './views/colaboradores.js';
 import { viewProjetos } from './views/projetos.js';
 import { viewMateriaisReferencia } from './views/materiaisReferencia.js';
 import { viewEtiquetas } from './views/etiquetas.js';
+import { viewAssistente } from './views/assistente.js';
 
 const CHAVE_LOGADO = MODO_DEMO ? 'cip_demo_logado' : 'cip_logado';
 
@@ -44,11 +45,13 @@ const ROTAS = [
   { padrao: /^#\/colaboradores$/, view: viewColaboradores },
   { padrao: /^#\/projetos$/, view: viewProjetos },
   { padrao: /^#\/materiais-referencia$/, view: viewMateriaisReferencia },
-  { padrao: /^#\/etiquetas$/, view: viewEtiquetas }
+  { padrao: /^#\/etiquetas$/, view: viewEtiquetas },
+  { padrao: /^#\/assistente$/, view: viewAssistente }
 ];
 
 const ITENS_MENU = [
   ['#/', 'Painel', 'painel'],
+  ['#/assistente', 'Assistente', 'assistente'],
   ['#/itens', 'Itens', 'box'],
   ['#/equipamentos', 'Equipamentos', 'equipamento'],
   ['#/veiculos', 'Veículos', 'veiculo'],

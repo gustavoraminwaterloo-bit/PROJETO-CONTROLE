@@ -40,6 +40,26 @@ async function chamarOuFalhar(action, payload) {
   return r.data;
 }
 
+async function chamarAssistente(corpo) {
+  if (MODO_DEMO) {
+    const mensagens = Array.isArray(corpo.mensagens) ? corpo.mensagens.slice() : [];
+    mensagens.push({
+      role: 'assistant',
+      content: [{ type: 'text', text: 'O assistente de IA só funciona com o backend real configurado (variável ANTHROPIC_API_KEY no Netlify). Em modo de demonstração não há IA disponível — veja o README para configurar.' }]
+    });
+    return { ok: true, mensagens, pendente: null };
+  }
+  const resposta = await fetch('/assistente', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo)
+  });
+  const dados = await resposta.json().catch(() => ({ ok: false, error: 'Resposta inválida do servidor.' }));
+  if (resposta.status === 401) window.dispatchEvent(new CustomEvent('sessao-expirada'));
+  return dados;
+}
+
 export const api = {
   login: (senha) => chamar('login', { senha }),
   logout: () => chamar('logout', {}),
@@ -69,5 +89,7 @@ export const api = {
   criarVeiculo: (payload) => chamarOuFalhar('criarVeiculo', payload),
   criarColaborador: (payload) => chamarOuFalhar('criarColaborador', payload),
   criarProjeto: (payload) => chamarOuFalhar('criarProjeto', payload),
-  criarMaterialReferencia: (payload) => chamarOuFalhar('criarMaterialReferencia', payload)
+  criarMaterialReferencia: (payload) => chamarOuFalhar('criarMaterialReferencia', payload),
+
+  assistente: (corpo) => chamarAssistente(corpo)
 };

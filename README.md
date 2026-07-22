@@ -31,7 +31,7 @@ site) — defina algo memorável só na hora do Passo 4.
 ## Passo 1 — Criar a planilha no Google Sheets
 
 1. Crie uma planilha nova em [sheets.google.com](https://sheets.google.com).
-2. Crie as 5 abas com os cabeçalhos exatos descritos em `docs/planilha-modelo.md`.
+2. Crie as 7 abas com os cabeçalhos exatos descritos em `docs/planilha-modelo.md`.
 3. Copie o **ID da planilha**: é o trecho da URL entre `/d/` e `/edit`.
    Ex: `https://docs.google.com/spreadsheets/d/ESTE_TRECHO_AQUI/edit` → `ESTE_TRECHO_AQUI`.
 
@@ -81,6 +81,21 @@ site) — defina algo memorável só na hora do Passo 4.
 Pronto — o site estará em uma URL do tipo `https://algum-nome.netlify.app`. Você pode trocar esse
 nome em **Site settings → Site details → Change site name**.
 
+## Passo 5 — Assistente de IA (opcional)
+
+O menu **Assistente** permite conversar com o sistema (consultar dados e, com sua confirmação,
+registrar ações). Para ativar:
+
+1. Crie uma conta e uma chave de API em [console.anthropic.com](https://console.anthropic.com)
+   (seção **API Keys**).
+2. No Netlify, **Site settings → Environment variables**, adicione:
+   - `ANTHROPIC_API_KEY` = a chave gerada
+3. Redeploy o site (Netlify faz isso automaticamente depois de salvar a variável, ou clique em
+   **Trigger deploy** em **Deploys**).
+
+Sem essa variável configurada, as outras telas do site continuam funcionando normalmente — só o
+Assistente fica indisponível.
+
 ## Como usar no dia a dia
 
 - Acesse o site, digite a senha (`ADMIN_PASSWORD`).
@@ -98,6 +113,9 @@ nome em **Site settings → Site details → Change site name**.
   térmica antes de imprimir. Cada QR abre a página de histórico daquele item/equipamento.
 - O **Painel** mostra avisos de calibração de equipamentos e validade de materiais de referência
   vencendo nos próximos 60 dias.
+- O **Assistente** responde perguntas sobre os dados e pode registrar ações por conversa (ex:
+  "registra a devolução do MP-01") — toda ação que muda dados aparece como um cartão de confirmação
+  antes de ser executada de verdade.
 
 ## Testando sem publicar ainda
 
@@ -115,3 +133,7 @@ Script (Passo 2), já que é isso que dá acesso à planilha real e a senha de v
 - Isso é adequado para uma ferramenta interna de uso único (você como administrador). Não é um
   sistema com múltiplos usuários/permissões — se no futuro vários colaboradores precisarem de login
   próprio, vale migrar para uma autenticação mais robusta (ex: Netlify Identity ou Google OAuth).
+- O **Assistente** nunca executa uma ação que altera dados (cadastrar, registrar entrada/saída/
+  locação/devolução/calibração) sozinho — ele sempre para e mostra um cartão de confirmação, e só
+  chama o Apps Script depois que você clica em "Confirmar". A `ANTHROPIC_API_KEY` fica só no
+  servidor, igual às outras variáveis.

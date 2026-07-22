@@ -480,6 +480,23 @@ tbody tr:last-child td { border-bottom: none; }
 .stat .rotulo { font-size: 0.85rem; color: var(--text-secondary); }
 
 /* ---------------------------------------------------------------------------
+   Assistente (chat)
+--------------------------------------------------------------------------- */
+.chat-shell { display: flex; flex-direction: column; height: calc(100vh - var(--topbar-h) - 160px); min-height: 360px; }
+.chat-mensagens { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 4px 12px; }
+.chat-bolha { max-width: 78%; padding: 10px 14px; border-radius: var(--radius-md); font-size: 0.9rem; line-height: 1.55; white-space: pre-wrap; }
+.chat-bolha.usuario { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+.chat-bolha.assistente { align-self: flex-start; background: var(--bg-elevated-2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.chat-bolha.sistema { align-self: flex-start; background: transparent; border: 1px dashed var(--border-strong); color: var(--text-muted); font-size: 0.8rem; font-style: italic; }
+.chat-pendente { border: 1px solid var(--warning-soft); background: var(--warning-soft); border-radius: var(--radius-md); padding: 14px; margin-top: 4px; }
+.chat-pendente h4 { margin: 0 0 8px; color: var(--warning-text); font-size: 0.92rem; }
+.chat-pendente table { font-size: 0.82rem; margin-bottom: 10px; }
+.chat-pendente td { border: none; padding: 2px 8px 2px 0; }
+.chat-form { display: flex; gap: 8px; margin-top: 12px; flex-shrink: 0; }
+.chat-form input { flex: 1; }
+.chat-vazio { color: var(--text-muted); text-align: center; margin-top: 40px; font-size: 0.9rem; }
+
+/* ---------------------------------------------------------------------------
    Responsividade
 --------------------------------------------------------------------------- */
 @media (max-width: 900px) {

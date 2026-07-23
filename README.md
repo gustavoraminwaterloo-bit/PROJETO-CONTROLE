@@ -83,18 +83,24 @@ nome em **Site settings → Site details → Change site name**.
 
 ## Passo 5 — Assistente de IA (opcional)
 
-O menu **Assistente** permite conversar com o sistema (consultar dados e, com sua confirmação,
-registrar ações). Para ativar:
+O menu **Assistente** permite conversar com o sistema (consultar dados, colar/anexar linhas de
+planilha para cadastrar em lote, e — com sua confirmação — registrar ações). Suporta dois
+provedores de IA; por padrão usa o **Gemini** (Google), que dá pra ativar com sua própria conta
+Google, sem depender de aprovação de outra pessoa:
 
-1. Crie uma conta e uma chave de API em [console.anthropic.com](https://console.anthropic.com)
-   (seção **API Keys**).
+1. Crie uma chave de API em [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+   (entre com a mesma conta Google que você já usa para a planilha/Apps Script).
 2. No Netlify, **Site settings → Environment variables**, adicione:
-   - `ANTHROPIC_API_KEY` = a chave gerada
+   - `GEMINI_API_KEY` = a chave gerada
 3. Redeploy o site (Netlify faz isso automaticamente depois de salvar a variável, ou clique em
    **Trigger deploy** em **Deploys**).
 
 Sem essa variável configurada, as outras telas do site continuam funcionando normalmente — só o
 Assistente fica indisponível.
+
+> **Alternativa (Claude/Anthropic)**: se no futuro você tiver acesso a uma chave da Anthropic, dá
+> pra trocar de provedor sem mudar código — adicione `IA_PROVIDER=claude` e `ANTHROPIC_API_KEY` nas
+> variáveis de ambiente do Netlify.
 
 ## Como usar no dia a dia
 
@@ -115,7 +121,8 @@ Assistente fica indisponível.
   vencendo nos próximos 60 dias.
 - O **Assistente** responde perguntas sobre os dados e pode registrar ações por conversa (ex:
   "registra a devolução do MP-01") — toda ação que muda dados aparece como um cartão de confirmação
-  antes de ser executada de verdade.
+  antes de ser executada de verdade. Também aceita colar várias linhas de planilha ou anexar um
+  arquivo `.csv`/`.txt` para cadastrar tudo de uma vez, em uma única confirmação.
 
 ## Testando sem publicar ainda
 
@@ -134,6 +141,6 @@ Script (Passo 2), já que é isso que dá acesso à planilha real e a senha de v
   sistema com múltiplos usuários/permissões — se no futuro vários colaboradores precisarem de login
   próprio, vale migrar para uma autenticação mais robusta (ex: Netlify Identity ou Google OAuth).
 - O **Assistente** nunca executa uma ação que altera dados (cadastrar, registrar entrada/saída/
-  locação/devolução/calibração) sozinho — ele sempre para e mostra um cartão de confirmação, e só
-  chama o Apps Script depois que você clica em "Confirmar". A `ANTHROPIC_API_KEY` fica só no
-  servidor, igual às outras variáveis.
+  locação/devolução/calibração, importação em lote) sozinho — ele sempre para e mostra um cartão de
+  confirmação, e só chama o Apps Script depois que você clica em "Confirmar". A chave de IA
+  (`GEMINI_API_KEY` ou `ANTHROPIC_API_KEY`) fica só no servidor, igual às outras variáveis.

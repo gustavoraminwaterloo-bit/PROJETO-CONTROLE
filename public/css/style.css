@@ -492,8 +492,10 @@ tbody tr:last-child td { border-bottom: none; }
 .chat-pendente h4 { margin: 0 0 8px; color: var(--warning-text); font-size: 0.92rem; }
 .chat-pendente table { font-size: 0.82rem; margin-bottom: 10px; }
 .chat-pendente td { border: none; padding: 2px 8px 2px 0; }
-.chat-form { display: flex; gap: 8px; margin-top: 12px; flex-shrink: 0; }
-.chat-form input { flex: 1; }
+.chat-form { display: flex; gap: 8px; margin-top: 12px; flex-shrink: 0; align-items: flex-end; }
+.chat-form textarea { flex: 1; resize: none; max-height: 220px; font-family: inherit; line-height: 1.4; }
+.chat-form button.icone-only { flex-shrink: 0; }
+.chat-form #chat-enviar { flex-shrink: 0; }
 .chat-vazio { color: var(--text-muted); text-align: center; margin-top: 40px; font-size: 0.9rem; }
 
 /* ---------------------------------------------------------------------------

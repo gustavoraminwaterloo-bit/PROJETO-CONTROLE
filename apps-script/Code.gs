@@ -186,9 +186,46 @@ function routeWrite_(action, payload) {
       return criarProjeto_(payload);
     case 'criarMaterialReferencia':
       return criarMaterialReferencia_(payload);
+    case 'importarLote':
+      return importarLote_(payload);
     default:
       throw new Error('Ação de escrita desconhecida: ' + action);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Importação em lote (usada pelo Assistente para cadastrar várias linhas de
+// uma vez, ex: a partir de uma planilha colada no chat)
+// ---------------------------------------------------------------------------
+
+function criadorParaAba_(aba) {
+  switch (aba) {
+    case 'Itens': return criarItem_;
+    case 'Equipamentos': return criarEquipamento_;
+    case 'Veiculos': return criarVeiculo_;
+    case 'Colaboradores': return criarColaborador_;
+    case 'Projetos': return criarProjeto_;
+    case 'MateriaisReferencia': return criarMaterialReferencia_;
+    default: return null;
+  }
+}
+
+function importarLote_(p) {
+  var criar = p.aba ? criadorParaAba_(p.aba) : null;
+  if (!criar) throw new Error('Aba não suportada para importação: ' + p.aba);
+  if (!Array.isArray(p.linhas) || p.linhas.length === 0) throw new Error('Informe as linhas a importar.');
+  var resultados = [];
+  var sucesso = 0;
+  p.linhas.forEach(function (linha, i) {
+    try {
+      criar(linha);
+      resultados.push({ linha: i + 1, ok: true });
+      sucesso++;
+    } catch (err) {
+      resultados.push({ linha: i + 1, ok: false, erro: err.message });
+    }
+  });
+  return { total: p.linhas.length, sucesso: sucesso, falhas: p.linhas.length - sucesso, detalhes: resultados };
 }
 
 // ---------------------------------------------------------------------------

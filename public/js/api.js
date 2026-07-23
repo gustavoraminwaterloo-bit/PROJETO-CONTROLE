@@ -45,7 +45,7 @@ async function chamarAssistente(corpo) {
     const mensagens = Array.isArray(corpo.mensagens) ? corpo.mensagens.slice() : [];
     mensagens.push({
       role: 'assistant',
-      content: [{ type: 'text', text: 'O assistente de IA só funciona com o backend real configurado (variável ANTHROPIC_API_KEY no Netlify). Em modo de demonstração não há IA disponível — veja o README para configurar.' }]
+      content: [{ type: 'text', text: 'O assistente de IA só funciona com o backend real configurado (variável GEMINI_API_KEY no Netlify). Em modo de demonstração não há IA disponível — veja o README para configurar.' }]
     });
     return { ok: true, mensagens, pendente: null };
   }

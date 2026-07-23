@@ -74,10 +74,14 @@ const FERRAMENTAS = [
   ferramenta('criarMaterialReferencia', 'Cadastra um novo material de referência de laboratório.', {
     ID: texto, Identificacao: texto, Certificador: texto, NumeroCertificado: texto, Lote: texto, IncertezaMedicao: texto,
     Validade: texto, Status: texto, Observacoes: texto
-  }, ['Identificacao'], true)
+  }, ['Identificacao'], true),
+  ferramenta('importarLote', 'Cadastra várias linhas de uma vez (importação em lote) numa das abas — use quando o usuário colar ou enviar dados de uma planilha com várias linhas, em vez de chamar a ferramenta de criar uma por uma. Cada linha deve ter os mesmos campos da ferramenta de criar daquela aba (ex: para "Itens", cada linha tem ID, Categoria, Descricao etc.).', {
+    aba: { type: 'string', enum: ['Itens', 'Equipamentos', 'Veiculos', 'Colaboradores', 'Projetos', 'MateriaisReferencia'] },
+    linhas: { type: 'array', items: { type: 'object' } }
+  }, ['aba', 'linhas'], true)
 ];
 
-function paraClaude() {
+function paraLLM() {
   return FERRAMENTAS.map(({ name, description, input_schema }) => ({ name, description, input_schema }));
 }
 
@@ -90,4 +94,4 @@ function existeFerramenta(nome) {
   return FERRAMENTAS.some((x) => x.name === nome);
 }
 
-module.exports = { FERRAMENTAS, paraClaude, eDeEscrita, existeFerramenta };
+module.exports = { FERRAMENTAS, paraLLM, eDeEscrita, existeFerramenta };

@@ -16,6 +16,7 @@ export const icons = {
   etiqueta: BASE('<path d="M3 11.5V5a2 2 0 0 1 2-2h6.5a2 2 0 0 1 1.4.6l8 8a2 2 0 0 1 0 2.8l-6.5 6.5a2 2 0 0 1-2.8 0l-8-8A2 2 0 0 1 3 11.5z"/><circle cx="8" cy="8" r="1.4"/>'),
   alerta: BASE('<path d="M10.6 3.6L2.2 18a1.8 1.8 0 0 0 1.5 2.7h16.6a1.8 1.8 0 0 0 1.5-2.7L13.4 3.6a1.8 1.8 0 0 0-2.8 0z"/><path d="M12 9.5v4.2"/><path d="M12 17.2h.01"/>'),
   assistente: BASE('<path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><circle cx="8.5" cy="10.5" r="1"/><circle cx="12" cy="10.5" r="1"/><circle cx="15.5" cy="10.5" r="1"/>'),
+  anexo: BASE('<path d="M21.4 11.1l-8.5 8.5a4.8 4.8 0 0 1-6.8-6.8l8-8a3.2 3.2 0 0 1 4.6 4.6l-7.5 7.5a1.6 1.6 0 0 1-2.3-2.3l6.9-6.9"/>'),
   busca: BASE('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>'),
   sino: BASE('<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>'),
   usuario: BASE('<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>'),

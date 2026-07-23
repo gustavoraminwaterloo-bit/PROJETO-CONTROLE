@@ -1,5 +1,6 @@
 // Netlify Function — assistente de IA que consulta e atualiza os dados do
-// sistema por conversa, usando tool-use da API da Anthropic (Claude).
+// sistema por conversa. Suporta mais de um provedor de IA (ver _ia_gemini.js
+// e _ia_claude.js) — escolha via variável de ambiente IA_PROVIDER.
 //
 // Regra de segurança central: a IA nunca executa uma ação de ESCRITA por
 // conta própria. Quando ela pede pra chamar uma ferramenta marcada como
@@ -7,14 +8,23 @@
 // pro site mostrar um botão de confirmar/cancelar — só depois disso a ação
 // de fato é executada no Apps Script.
 //
-// Variável de ambiente adicional (além das já usadas em api.js):
-//   ANTHROPIC_API_KEY -> chave de API da Anthropic (console.anthropic.com)
-//   ANTHROPIC_MODEL    -> opcional, padrão "claude-sonnet-5"
+// Variáveis de ambiente adicionais (além das já usadas em api.js):
+//   IA_PROVIDER        -> "gemini" (padrão) ou "claude"
+//   GEMINI_API_KEY      -> chave de API do Gemini (aistudio.google.com/apikey), se IA_PROVIDER=gemini
+//   GEMINI_MODEL         -> opcional, padrão "gemini-2.5-flash"
+//   ANTHROPIC_API_KEY   -> chave de API da Anthropic (console.anthropic.com), se IA_PROVIDER=claude
+//   ANTHROPIC_MODEL      -> opcional, padrão "claude-sonnet-5"
 
-const { requireEnv, json, sessaoValida, chamarAppsScript } = require('./_auth');
-const { paraClaude, eDeEscrita, existeFerramenta } = require('./_ferramentas');
+const { json, sessaoValida, chamarAppsScript } = require('./_auth');
+const { paraLLM, eDeEscrita, existeFerramenta } = require('./_ferramentas');
+const iaGemini = require('./_ia_gemini');
+const iaClaude = require('./_ia_claude');
 
 const MAX_ITERACOES = 5;
+
+function provedorIA() {
+  return (process.env.IA_PROVIDER || 'gemini').toLowerCase() === 'claude' ? iaClaude : iaGemini;
+}
 
 function dataDeHoje() {
   return new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -33,34 +43,10 @@ Regras importantes:
 - Sempre use as ferramentas disponíveis para responder perguntas sobre dados — nunca invente números, datas ou códigos.
 - Se precisar de um código (ID) que o usuário não informou exatamente, procure primeiro com uma ferramenta de leitura (ex: listItens, listEquipamentos) antes de agir.
 - Chame no máximo UMA ferramenta por resposta. Se precisar de várias etapas, peça uma por vez.
+- Se o usuário colar ou descrever várias linhas de uma planilha (vários itens/equipamentos de uma vez), extraia os campos de cada linha e use a ferramenta importarLote UMA vez com todas as linhas, em vez de chamar a ferramenta de criar várias vezes.
 - Antes de propor uma ação que muda dados, explique em texto simples o que você está prestes a fazer (o usuário vai confirmar ou cancelar essa ação numa tela própria — você não precisa pedir "confirma?" em texto, só descreva a ação com clareza).
 - Se o pedido do usuário for ambíguo (ex: qual item exatamente, qual colaborador), pergunte antes de chamar uma ferramenta de escrita.
 - Seja direto e objetivo nas respostas, em português do Brasil.`;
-}
-
-async function chamarClaude(mensagens) {
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const modelo = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: modelo,
-      max_tokens: 1500,
-      system: systemPrompt(),
-      tools: paraClaude(),
-      messages: mensagens
-    })
-  });
-  const dados = await res.json();
-  if (!res.ok) {
-    throw new Error((dados && dados.error && dados.error.message) || 'Erro ao chamar a IA.');
-  }
-  return dados;
 }
 
 function primeiroToolUse(content) {
@@ -83,6 +69,7 @@ exports.handler = async (event) => {
   }
 
   let mensagens = Array.isArray(body.mensagens) ? body.mensagens.slice() : [];
+  const { chamar } = provedorIA();
 
   try {
     if (body.confirmar || body.cancelar) {
@@ -99,11 +86,11 @@ exports.handler = async (event) => {
         const resultado = await chamarAppsScript(body.ferramenta, body.parametros || {});
         conteudoResultado = JSON.stringify(resultado);
       }
-      mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: body.toolUseId, content: conteudoResultado }] });
+      mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: body.toolUseId, name: body.ferramenta, content: conteudoResultado }] });
     }
 
     for (let i = 0; i < MAX_ITERACOES; i++) {
-      const resposta = await chamarClaude(mensagens);
+      const resposta = await chamar(mensagens, paraLLM(), systemPrompt());
       mensagens.push({ role: 'assistant', content: resposta.content });
 
       const toolUse = primeiroToolUse(resposta.content);
@@ -112,7 +99,7 @@ exports.handler = async (event) => {
       }
 
       if (!existeFerramenta(toolUse.name)) {
-        mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: 'Ferramenta desconhecida.', is_error: true }] });
+        mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, name: toolUse.name, content: 'Ferramenta desconhecida.', is_error: true }] });
         continue;
       }
 
@@ -125,7 +112,7 @@ exports.handler = async (event) => {
       }
 
       const resultado = await chamarAppsScript(toolUse.name, toolUse.input);
-      mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(resultado) }] });
+      mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, name: toolUse.name, content: JSON.stringify(resultado) }] });
     }
 
     return json(200, { ok: true, mensagens, pendente: null, aviso: 'Muitas etapas seguidas — parei por segurança. Pode reformular o pedido?' });

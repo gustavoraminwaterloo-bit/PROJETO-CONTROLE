@@ -216,6 +216,10 @@ function routeWrite_(action, payload) {
       return criarUsuario_(payload);
     case 'desativarUsuario':
       return desativarUsuario_(payload);
+    case 'atualizarResponsavelMaterialReferencia':
+      return atualizarResponsavelMaterialReferencia_(payload);
+    case 'atualizarContratoVeiculo':
+      return atualizarContratoVeiculo_(payload);
     default:
       throw new Error('Ação de escrita desconhecida: ' + action);
   }
@@ -428,6 +432,7 @@ function criarEquipamento_(p) {
     ID: p.ID,
     Descricao: p.Descricao || '',
     Marca: p.Marca || '',
+    Modelo: p.Modelo || '',
     NumeroSerie: p.NumeroSerie || '',
     DataCompra: p.DataCompra || '',
     ValorPago: toNumber_(p.ValorPago),
@@ -526,9 +531,27 @@ function criarVeiculo_(p) {
     Status: p.Status || 'Em estoque',
     ColaboradorAtual: p.ColaboradorAtual || '',
     LocalArmazenamento: p.LocalArmazenamento || '',
+    DataAssinaturaContrato: p.DataAssinaturaContrato || '',
+    PeriodoContratoMeses: p.PeriodoContratoMeses || '',
+    VencimentoContrato: p.VencimentoContrato || '',
     Observacoes: p.Observacoes || ''
   });
   return { ID: p.ID };
+}
+
+// Atualiza só os dados de contrato/locação de um veículo já cadastrado, sem
+// mexer em status, alocação ou nenhum outro campo — pra ser rápido de manter
+// em dia conforme os contratos forem renovados.
+function atualizarContratoVeiculo_(p) {
+  if (!p.ID) throw new Error('Informe o veículo.');
+  var sheet = getSheet_('Veiculos');
+  if (findRowIndexById_(sheet, 'ID', p.ID) === -1) throw new Error('Veículo não encontrado: ' + p.ID);
+  updateRowById_(sheet, 'ID', p.ID, {
+    DataAssinaturaContrato: p.DataAssinaturaContrato || '',
+    PeriodoContratoMeses: p.PeriodoContratoMeses || '',
+    VencimentoContrato: p.VencimentoContrato || ''
+  });
+  return getVeiculo_(p.ID);
 }
 
 // ---------------------------------------------------------------------------
@@ -745,9 +768,21 @@ function criarMaterialReferencia_(p) {
     IncertezaMedicao: p.IncertezaMedicao || '',
     Validade: p.Validade || '',
     Status: p.Status || 'Em uso',
+    ColaboradorAtual: p.ColaboradorAtual || '',
     Observacoes: p.Observacoes || ''
   });
   return { ID: id };
+}
+
+// Troca só o responsável atual pela solução/material (PT-007: o Responsável da
+// Logística precisa saber sempre com qual técnico está cada lote) — ação
+// dedicada e rápida, sem mexer no Status nem nos outros campos.
+function atualizarResponsavelMaterialReferencia_(p) {
+  if (!p.ID) throw new Error('Informe o material de referência.');
+  var sheet = getSheet_('MateriaisReferencia');
+  if (findRowIndexById_(sheet, 'ID', p.ID) === -1) throw new Error('Material de referência não encontrado: ' + p.ID);
+  updateRowById_(sheet, 'ID', p.ID, { ColaboradorAtual: p.ColaboradorAtual || '' });
+  return { ID: p.ID, ColaboradorAtual: p.ColaboradorAtual || '' };
 }
 
 // ---------------------------------------------------------------------------
@@ -790,5 +825,12 @@ function avisos_(diasAntecedencia) {
     })
     .filter(function (a) { return a.diasRestantes !== null && a.diasRestantes <= diasAntecedencia; });
 
-  return calibracoes.concat(validades).sort(function (a, b) { return a.diasRestantes - b.diasRestantes; });
+  var contratosVeiculos = sheetToObjects_(getSheet_('Veiculos'))
+    .filter(function (v) { return v.VencimentoContrato; })
+    .map(function (v) {
+      return { tipo: 'Vencimento de contrato', id: v.ID, descricao: v.Descricao + (v.Placa ? ' (' + v.Placa + ')' : ''), data: v.VencimentoContrato, diasRestantes: diasAte_(v.VencimentoContrato) };
+    })
+    .filter(function (a) { return a.diasRestantes !== null && a.diasRestantes <= diasAntecedencia; });
+
+  return calibracoes.concat(validades, contratosVeiculos).sort(function (a, b) { return a.diasRestantes - b.diasRestantes; });
 }

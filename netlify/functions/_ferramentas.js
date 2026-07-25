@@ -52,7 +52,7 @@ const FERRAMENTAS = [
     ItemID: texto, ChecadoPor: texto, DataDevolucaoReal: texto, Observacoes: texto
   }, ['ItemID'], true),
   ferramenta('criarEquipamento', 'Cadastra um novo equipamento de medição/laboratório.', {
-    ID: texto, Descricao: texto, Marca: texto, NumeroSerie: texto, DataCompra: texto, ValorPago: numero, Fornecedor: texto,
+    ID: texto, Descricao: texto, Marca: texto, Modelo: texto, NumeroSerie: texto, DataCompra: texto, ValorPago: numero, Fornecedor: texto,
     Status: texto, ColaboradorAtual: texto, LocalArmazenamento: texto, UltimaCalibracao: texto, ProximaCalibracao: texto,
     NumeroCertificadoCalibracao: texto, Observacoes: texto
   }, ['ID'], true),
@@ -67,7 +67,11 @@ const FERRAMENTAS = [
   }, ['ItemID', 'ProximaCalibracao'], true),
   ferramenta('criarVeiculo', 'Cadastra um novo veículo na frota.', {
     ID: texto, Placa: texto, Descricao: texto, Marca: texto, Ano: texto, Quilometragem: numero, DataCompra: texto,
-    ValorPago: numero, Fornecedor: texto, Status: texto, ColaboradorAtual: texto, LocalArmazenamento: texto, Observacoes: texto
+    ValorPago: numero, Fornecedor: texto, Status: texto, ColaboradorAtual: texto, LocalArmazenamento: texto,
+    DataAssinaturaContrato: texto, PeriodoContratoMeses: numero, VencimentoContrato: texto, Observacoes: texto
+  }, ['ID'], true),
+  ferramenta('atualizarContratoVeiculo', 'Atualiza a data de assinatura, período (em meses) e vencimento do contrato/locação de um veículo já cadastrado.', {
+    ID: texto, DataAssinaturaContrato: texto, PeriodoContratoMeses: numero, VencimentoContrato: texto
   }, ['ID'], true),
   ferramenta('criarColaborador', 'Cadastra um novo colaborador.', {
     Nome: texto, Cargo: texto, Email: texto, Status: texto
@@ -77,8 +81,11 @@ const FERRAMENTAS = [
   }, ['Codigo'], true),
   ferramenta('criarMaterialReferencia', 'Cadastra um novo material de referência de laboratório.', {
     ID: texto, Identificacao: texto, Certificador: texto, NumeroCertificado: texto, Lote: texto, IncertezaMedicao: texto,
-    Validade: texto, Status: texto, Observacoes: texto
+    Validade: texto, Status: texto, ColaboradorAtual: texto, Observacoes: texto
   }, ['Identificacao'], true),
+  ferramenta('atualizarResponsavelMaterialReferencia', 'Troca qual técnico está com um material de referência/solução no momento (sem mudar status ou outros campos) — use quando o usuário disser algo como "a solução de pH agora está com o Fernando".', {
+    ID: texto, ColaboradorAtual: texto
+  }, ['ID'], true),
   ferramenta('importarLote', 'Cadastra várias linhas de uma vez (importação em lote) numa das abas — use quando o usuário colar ou enviar dados de uma planilha com várias linhas, em vez de chamar a ferramenta de criar uma por uma. Cada linha deve ter os mesmos campos da ferramenta de criar daquela aba (ex: para "Itens", cada linha tem ID, Categoria, Descricao etc.).', {
     aba: { type: 'string', enum: ['Itens', 'Equipamentos', 'Veiculos', 'Colaboradores', 'Projetos', 'MateriaisReferencia'] },
     linhas: { type: 'array', items: { type: 'object' } }

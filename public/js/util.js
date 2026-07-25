@@ -2,6 +2,7 @@ import { icons } from './icons.js';
 
 export function linkDoAviso(aviso) {
   if (aviso.tipo === 'Calibração') return `#/equipamento/${encodeURIComponent(aviso.id)}`;
+  if (aviso.tipo === 'Vencimento de contrato') return `#/veiculo/${encodeURIComponent(aviso.id)}`;
   return '#/materiais-referencia';
 }
 

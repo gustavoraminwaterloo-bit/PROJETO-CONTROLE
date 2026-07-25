@@ -21,11 +21,13 @@ Esta aba é só para patrimônio de TI alocado a colaboradores. Equipamentos de 
 
 ## Aba `Equipamentos` (medição/laboratório)
 
-| ID | Descricao | Marca | NumeroSerie | DataCompra | ValorPago | Fornecedor | Status | ColaboradorAtual | LocalArmazenamento | UltimaCalibracao | ProximaCalibracao | NumeroCertificadoCalibracao | Observacoes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ID | Descricao | Marca | Modelo | NumeroSerie | DataCompra | ValorPago | Fornecedor | Status | ColaboradorAtual | LocalArmazenamento | UltimaCalibracao | ProximaCalibracao | NumeroCertificadoCalibracao | Observacoes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 - **ID**: código único do equipamento (ex: `MP-01`, `BA-02`) — mantenha os códigos que já existem no
   `LEMCC-V02.xlsx` e no `PT-005-F02-V03.xlsx`.
+- **Modelo**: separado de Marca pra bater com a coluna que já existe no LEMCC (ex: Marca `Hanna`,
+  Modelo `HI 98194`).
 - **Status**: Em estoque / Em locação / Em manutenção / Fora de uso
 - **ColaboradorAtual**: quando `Status = Em locação`, é o solicitante/técnico responsável atual.
 - Toda calibração e locação (empréstimo a projeto) é feita a partir desta aba, na tela
@@ -33,12 +35,16 @@ Esta aba é só para patrimônio de TI alocado a colaboradores. Equipamentos de 
 
 ## Aba `Veiculos` (frota)
 
-| ID | Placa | Descricao | Marca | Ano | Quilometragem | DataCompra | ValorPago | Fornecedor | Status | ColaboradorAtual | LocalArmazenamento | Observacoes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ID | Placa | Descricao | Marca | Ano | Quilometragem | DataCompra | ValorPago | Fornecedor | Status | ColaboradorAtual | LocalArmazenamento | DataAssinaturaContrato | PeriodoContratoMeses | VencimentoContrato | Observacoes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 - **ID**: código único do veículo (ex: `CARRO-01`) — não use a placa como código, já que placa pode
   mudar (ex: revalidação para o padrão Mercosul); guarde a placa no campo `Placa`.
 - **Status**: Em estoque / Com colaborador / Em manutenção / Fora de uso
+- **DataAssinaturaContrato** / **PeriodoContratoMeses** / **VencimentoContrato**: controle de
+  contrato/locação do veículo (quando aplicável) — use uma data completa em `VencimentoContrato` (ex:
+  `2030-02-23`), é ela que gera o aviso no Painel, igual já acontece com calibração de equipamento e
+  validade de material de referência.
 - Alocação e devolução de veículo funcionam igual à de `Itens` (alocação fixa a um colaborador,
   normalmente um técnico) — usa as mesmas ações do sistema, só que na tela "Veículos".
 
@@ -103,11 +109,15 @@ Preencha aqui os projetos a partir da lista oficial que vocês já mantêm.
 
 ## Aba `MateriaisReferencia`
 
-| ID | Identificacao | Certificador | NumeroCertificado | Lote | IncertezaMedicao | Validade | Status | Observacoes |
-|---|---|---|---|---|---|---|---|---|
+| ID | Identificacao | Certificador | NumeroCertificado | Lote | IncertezaMedicao | Validade | Status | ColaboradorAtual | Observacoes |
+|---|---|---|---|---|---|---|---|---|---|
 
 - **Validade**: use uma data completa (ex: `2026-12-31`), não o formato "dezembro-26" do documento
   Word atual — assim o sistema consegue calcular corretamente quantos dias faltam para vencer.
+- **ColaboradorAtual**: técnico que está com a solução no momento (segue o PT-007 — o Responsável da
+  Logística entrega a solução fracionada para o técnico e precisa saber com quem cada lote está). Na
+  tela **Materiais de Referência**, dá pra trocar isso a qualquer momento num campo direto na lista,
+  sem precisar abrir formulário.
 
 ## Depois de criar a planilha
 

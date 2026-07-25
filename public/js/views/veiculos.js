@@ -184,6 +184,15 @@ export async function viewVeiculoForm(main) {
         <label>Data da compra
           <input name="DataCompra" type="date" />
         </label>
+        <label>Assinatura do contrato (opcional)
+          <input name="DataAssinaturaContrato" type="date" />
+        </label>
+        <label>Período do contrato (meses)
+          <input name="PeriodoContratoMeses" type="number" />
+        </label>
+        <label>Vencimento do contrato
+          <input name="VencimentoContrato" type="date" />
+        </label>
         <label style="grid-column: 1 / -1">Observações
           <textarea name="Observacoes"></textarea>
         </label>

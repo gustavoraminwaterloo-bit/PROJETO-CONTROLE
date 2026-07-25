@@ -2,12 +2,22 @@ import { api } from '../api.js';
 import { escapeHtml, formatarData } from '../util.js';
 
 export async function viewMateriaisReferencia(main) {
-  const materiais = await api.listMateriaisReferencia();
+  const [materiais, colaboradores] = await Promise.all([api.listMateriaisReferencia(), api.listColaboradores()]);
+  const opcoesColaboradores = colaboradores.map((c) => `<option>${escapeHtml(c.Nome)}</option>`).join('');
+
+  function seletorResponsavel(m) {
+    return `
+      <select class="sel-responsavel" data-id="${escapeHtml(m.ID)}">
+        <option value="">Sem responsável</option>
+        ${colaboradores.map((c) => `<option ${c.Nome === m.ColaboradorAtual ? 'selected' : ''}>${escapeHtml(c.Nome)}</option>`).join('')}
+      </select>
+    `;
+  }
 
   main.innerHTML = `
     <div class="pagina-titulo">
       <h2>Materiais de Referência</h2>
-      <div class="subtitulo">${materiais.length} materiais cadastrados — controle de validade</div>
+      <div class="subtitulo">${materiais.length} materiais cadastrados — controle de validade e responsável atual (PT-007)</div>
     </div>
     <div class="card">
       <h3>Novo material de referência</h3>
@@ -21,7 +31,13 @@ export async function viewMateriaisReferencia(main) {
         <label>Status
           <select name="Status"><option>Em uso</option><option>Vencido</option><option>Descartado</option></select>
         </label>
-        <label>Observações <textarea name="Observacoes"></textarea></label>
+        <label>Responsável atual (opcional)
+          <select name="ColaboradorAtual">
+            <option value="">Sem responsável — fica no almoxarifado</option>
+            ${opcoesColaboradores}
+          </select>
+        </label>
+        <label style="grid-column: 1 / -1">Observações <textarea name="Observacoes"></textarea></label>
       </form>
       <p class="msg-erro" id="erro-material" style="display:none"></p>
       <button id="btn-salvar-material" style="margin-top:10px">Salvar material</button>
@@ -29,9 +45,10 @@ export async function viewMateriaisReferencia(main) {
 
     <div class="card">
       <h3>Lista de materiais</h3>
+      <p class="ajuda">Troque o responsável direto aqui na lista — salva sozinho, sem precisar abrir formulário.</p>
       <div class="tabela-wrap">
         <table>
-          <thead><tr><th>ID</th><th>Identificação</th><th>Certificador</th><th>Lote</th><th>Validade</th><th>Status</th></tr></thead>
+          <thead><tr><th>ID</th><th>Identificação</th><th>Certificador</th><th>Lote</th><th>Validade</th><th>Status</th><th>Responsável atual</th></tr></thead>
           <tbody>
             ${materiais.map((m) => `
               <tr>
@@ -41,11 +58,13 @@ export async function viewMateriaisReferencia(main) {
                 <td>${escapeHtml(m.Lote)}</td>
                 <td>${formatarData(m.Validade)}</td>
                 <td>${escapeHtml(m.Status)}</td>
+                <td>${seletorResponsavel(m)}</td>
               </tr>
-            `).join('') || '<tr><td colspan="6">Nenhum material cadastrado.</td></tr>'}
+            `).join('') || '<tr><td colspan="7">Nenhum material cadastrado.</td></tr>'}
           </tbody>
         </table>
       </div>
+      <p class="msg-erro" id="erro-responsavel" style="display:none"></p>
     </div>
   `;
 
@@ -60,5 +79,21 @@ export async function viewMateriaisReferencia(main) {
       erroEl.textContent = err.message;
       erroEl.style.display = 'block';
     }
+  });
+
+  main.querySelectorAll('.sel-responsavel').forEach((sel) => {
+    sel.addEventListener('change', async () => {
+      const erroEl = document.getElementById('erro-responsavel');
+      erroEl.style.display = 'none';
+      sel.disabled = true;
+      try {
+        await api.atualizarResponsavelMaterialReferencia({ ID: sel.dataset.id, ColaboradorAtual: sel.value });
+      } catch (err) {
+        erroEl.textContent = err.message;
+        erroEl.style.display = 'block';
+      } finally {
+        sel.disabled = false;
+      }
+    });
   });
 }

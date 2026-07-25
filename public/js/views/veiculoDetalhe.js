@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { escapeHtml, formatarMoeda, formatarDataHora, classeBadgeStatus } from '../util.js';
+import { escapeHtml, formatarMoeda, formatarData, formatarDataHora, classeBadgeStatus } from '../util.js';
 import { eAdmin } from '../app.js';
 
 function linhaHistorico(m) {
@@ -42,6 +42,11 @@ export async function viewVeiculoDetalhe(main, { id }) {
            <strong>Valor pago:</strong> ${veiculo.ValorPago ? formatarMoeda(veiculo.ValorPago) : '-'}<br/>
            <strong>Fornecedor:</strong> ${escapeHtml(veiculo.Fornecedor || '-')}</p>
       </div>
+      ${veiculo.VencimentoContrato || veiculo.DataAssinaturaContrato ? `
+      <p><strong>Contrato — assinado em:</strong> ${formatarData(veiculo.DataAssinaturaContrato)} ·
+         <strong>período:</strong> ${escapeHtml(veiculo.PeriodoContratoMeses ? veiculo.PeriodoContratoMeses + ' meses' : '-')} ·
+         <strong>vencimento:</strong> ${formatarData(veiculo.VencimentoContrato)}</p>
+      ` : ''}
       ${veiculo.Observacoes ? `<p><strong>Observações:</strong> ${escapeHtml(veiculo.Observacoes)}</p>` : ''}
     </div>
 
@@ -67,6 +72,15 @@ export async function viewVeiculoDetalhe(main, { id }) {
           <label>Checado por <input name="ChecadoPor" /></label>
           <label>Observações <textarea name="Observacoes"></textarea></label>
           <button type="submit">Confirmar devolução</button>
+        </form>
+      </details>
+      <details style="margin-top:10px">
+        <summary>Editar contrato / locação</summary>
+        <form id="form-contrato" style="margin-top:10px">
+          <label>Assinatura do contrato <input name="DataAssinaturaContrato" type="date" value="${veiculo.DataAssinaturaContrato ? escapeHtml(String(veiculo.DataAssinaturaContrato).slice(0, 10)) : ''}" /></label>
+          <label>Período (meses) <input name="PeriodoContratoMeses" type="number" value="${escapeHtml(veiculo.PeriodoContratoMeses || '')}" /></label>
+          <label>Vencimento <input name="VencimentoContrato" type="date" value="${veiculo.VencimentoContrato ? escapeHtml(String(veiculo.VencimentoContrato).slice(0, 10)) : ''}" /></label>
+          <button type="submit">Salvar contrato</button>
         </form>
       </details>
       ` : ''}
@@ -134,6 +148,21 @@ export async function viewVeiculoDetalhe(main, { id }) {
 
   ligarFormulario('form-alocar', api.alocarColaborador);
   ligarFormulario('form-devolucao', api.registrarDevolucao);
+
+  document.getElementById('form-contrato')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const dados = Object.fromEntries(new FormData(e.target).entries());
+    dados.ID = veiculo.ID;
+    const erroEl = document.getElementById('erro-acao');
+    erroEl.style.display = 'none';
+    try {
+      await api.atualizarContratoVeiculo(dados);
+      await viewVeiculoDetalhe(main, { id });
+    } catch (err) {
+      erroEl.textContent = err.message;
+      erroEl.style.display = 'block';
+    }
+  });
 
   document.getElementById('form-reserva').addEventListener('submit', async (e) => {
     e.preventDefault();

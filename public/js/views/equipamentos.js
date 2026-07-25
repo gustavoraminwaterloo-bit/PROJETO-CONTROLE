@@ -30,6 +30,7 @@ export async function viewEquipamentos(main) {
   const COLUNAS = [
     { campo: 'ID', rotulo: 'Código' },
     { campo: 'Descricao', rotulo: 'Descrição' },
+    { campo: 'Modelo', rotulo: 'Modelo' },
     { campo: 'Status', rotulo: 'Status' },
     { campo: 'ColaboradorAtual', rotulo: 'Responsável / Projeto' },
     { campo: 'ProximaCalibracao', rotulo: 'Próxima calibração' }
@@ -51,6 +52,7 @@ export async function viewEquipamentos(main) {
       <tr>
         <td><a href="#/equipamento/${encodeURIComponent(e.ID)}">${escapeHtml(e.ID)}</a></td>
         <td>${escapeHtml(e.Descricao)}</td>
+        <td>${escapeHtml(e.Modelo || '-')}</td>
         <td><span class="badge ${classeBadgeStatus(e.Status)}">${escapeHtml(e.Status)}</span></td>
         <td>${escapeHtml(e.ColaboradorAtual || '-')}</td>
         <td>${e.ProximaCalibracao ? `<span class="badge ${classeCalibracao(dias)}">${formatarData(e.ProximaCalibracao)}${dias !== null ? ` (${dias < 0 ? 'vencida há ' + Math.abs(dias) + 'd' : dias + 'd'})` : ''}</span>` : '-'}</td>
@@ -64,7 +66,7 @@ export async function viewEquipamentos(main) {
     estado.pagina = paginaAtual;
 
     const corpo = main.querySelector('#corpo-tabela');
-    corpo.innerHTML = pagina.length ? pagina.map(linhaHtml).join('') : '<tr><td colspan="5" style="text-align:center; color:var(--text-muted)">Nenhum equipamento encontrado.</td></tr>';
+    corpo.innerHTML = pagina.length ? pagina.map(linhaHtml).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted)">Nenhum equipamento encontrado.</td></tr>';
 
     main.querySelectorAll('th.ordenavel').forEach((th) => {
       const campo = th.dataset.campo;
@@ -143,11 +145,14 @@ export async function viewEquipamentoForm(main) {
         <label>Código do equipamento (ex: MP-01, BA-02) *
           <input name="ID" required />
         </label>
-        <label>Descrição / Modelo
+        <label>Descrição
           <input name="Descricao" />
         </label>
         <label>Marca
           <input name="Marca" />
+        </label>
+        <label>Modelo
+          <input name="Modelo" />
         </label>
         <label>Nº de série
           <input name="NumeroSerie" />

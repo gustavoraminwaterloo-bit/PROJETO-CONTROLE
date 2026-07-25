@@ -25,6 +25,7 @@ export async function viewEquipamentoDetalhe(main, { id }) {
       <div class="grid cols-2" style="margin-top:12px">
         <p><strong>Descrição:</strong> ${escapeHtml(equipamento.Descricao || '-')}<br/>
            <strong>Marca:</strong> ${escapeHtml(equipamento.Marca || '-')}<br/>
+           <strong>Modelo:</strong> ${escapeHtml(equipamento.Modelo || '-')}<br/>
            <strong>Nº de série:</strong> ${escapeHtml(equipamento.NumeroSerie || '-')}<br/>
            <strong>Local de armazenamento:</strong> ${escapeHtml(equipamento.LocalArmazenamento || '-')}</p>
         <p><strong>Responsável / projeto atual:</strong> ${escapeHtml(equipamento.ColaboradorAtual || '-')}<br/>

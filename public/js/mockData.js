@@ -17,10 +17,10 @@ function seed() {
       { ID: 'CEL-001', Categoria: 'Celular', Descricao: 'Motorola G9', Marca: 'Motorola', NumeroSerie: 'SN-0002', DataCompra: '2023-02-10', ValorPago: 900, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Armário TI', Observacoes: '' }
     ],
     equipamentos: [
-      { ID: 'MP-01', Descricao: 'Medidor Multiparâmetro HI 98194', Marca: 'Hanna', NumeroSerie: '5090070101', DataCompra: '2022-05-01', ValorPago: 8500, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Sala da Logística', UltimaCalibracao: '2025-08-01', ProximaCalibracao: semanasA(20), NumeroCertificadoCalibracao: 'CERT-1234', Observacoes: '' }
+      { ID: 'MP-01', Descricao: 'Medidor Multiparâmetro', Marca: 'Hanna', Modelo: 'HI 98194', NumeroSerie: '5090070101', DataCompra: '2022-05-01', ValorPago: 8500, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Sala da Logística', UltimaCalibracao: '2025-08-01', ProximaCalibracao: semanasA(20), NumeroCertificadoCalibracao: 'CERT-1234', Observacoes: '' }
     ],
     veiculos: [
-      { ID: 'CARRO-01', Placa: 'ABC1D23', Descricao: 'Fiat Strada', Marca: 'Fiat', Ano: '2022', Quilometragem: 32000, DataCompra: '2022-03-01', ValorPago: 95000, Fornecedor: 'Concessionária Exemplo', Status: 'Com colaborador', ColaboradorAtual: 'Fernando Luna', LocalArmazenamento: '', Observacoes: '' },
+      { ID: 'CARRO-01', Placa: 'ABC1D23', Descricao: 'Fiat Strada', Marca: 'Fiat', Ano: '2022', Quilometragem: 32000, DataCompra: '2022-03-01', ValorPago: 95000, Fornecedor: 'Concessionária Exemplo', Status: 'Com colaborador', ColaboradorAtual: 'Fernando Luna', LocalArmazenamento: '', DataAssinaturaContrato: '2024-06-11', PeriodoContratoMeses: 24, VencimentoContrato: semanasA(25), Observacoes: '' },
       { ID: 'CARRO-02', Placa: 'DEF4G56', Descricao: 'Hyundai HB20', Marca: 'Hyundai', Ano: '2023', Quilometragem: 15400, DataCompra: '2023-01-15', ValorPago: 78000, Fornecedor: 'Concessionária Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Garagem', Observacoes: 'Uso compartilhado por analistas' }
     ],
     reservas: [
@@ -221,7 +221,11 @@ export function mockCall(action, payload = {}) {
         .filter((m) => m.Validade && m.Status !== 'Descartado')
         .map((m) => ({ tipo: 'Validade material de referência', id: m.ID, descricao: m.Identificacao, data: m.Validade, diasRestantes: diasAte(m.Validade) }))
         .filter((a) => a.diasRestantes !== null && a.diasRestantes <= dias);
-      resultado = calibracoes.concat(validades).sort((a, b) => a.diasRestantes - b.diasRestantes);
+      const contratosVeiculos = db.veiculos
+        .filter((v) => v.VencimentoContrato)
+        .map((v) => ({ tipo: 'Vencimento de contrato', id: v.ID, descricao: `${v.Descricao}${v.Placa ? ' (' + v.Placa + ')' : ''}`, data: v.VencimentoContrato, diasRestantes: diasAte(v.VencimentoContrato) }))
+        .filter((a) => a.diasRestantes !== null && a.diasRestantes <= dias);
+      resultado = calibracoes.concat(validades, contratosVeiculos).sort((a, b) => a.diasRestantes - b.diasRestantes);
       break;
     }
     case 'criarItem': {
@@ -271,7 +275,7 @@ export function mockCall(action, payload = {}) {
       if (!payload.ID) throw new Error('Informe o código do equipamento (ID).');
       if (db.equipamentos.some((e) => e.ID === payload.ID)) throw new Error('Já existe um equipamento com este código: ' + payload.ID);
       const equipamento = {
-        ID: payload.ID, Descricao: payload.Descricao || '', Marca: payload.Marca || '',
+        ID: payload.ID, Descricao: payload.Descricao || '', Marca: payload.Marca || '', Modelo: payload.Modelo || '',
         NumeroSerie: payload.NumeroSerie || '', DataCompra: payload.DataCompra || '', ValorPago: Number(payload.ValorPago) || 0,
         Fornecedor: payload.Fornecedor || '', Status: payload.Status || 'Em estoque', ColaboradorAtual: payload.ColaboradorAtual || '',
         LocalArmazenamento: payload.LocalArmazenamento || '', UltimaCalibracao: payload.UltimaCalibracao || '',
@@ -311,10 +315,21 @@ export function mockCall(action, payload = {}) {
         ID: payload.ID, Placa: payload.Placa || '', Descricao: payload.Descricao || '', Marca: payload.Marca || '',
         Ano: payload.Ano || '', Quilometragem: Number(payload.Quilometragem) || 0, DataCompra: payload.DataCompra || '',
         ValorPago: Number(payload.ValorPago) || 0, Fornecedor: payload.Fornecedor || '', Status: payload.Status || 'Em estoque',
-        ColaboradorAtual: payload.ColaboradorAtual || '', LocalArmazenamento: payload.LocalArmazenamento || '', Observacoes: payload.Observacoes || ''
+        ColaboradorAtual: payload.ColaboradorAtual || '', LocalArmazenamento: payload.LocalArmazenamento || '',
+        DataAssinaturaContrato: payload.DataAssinaturaContrato || '', PeriodoContratoMeses: payload.PeriodoContratoMeses || '',
+        VencimentoContrato: payload.VencimentoContrato || '', Observacoes: payload.Observacoes || ''
       };
       db.veiculos.push(veiculo);
       resultado = { ID: veiculo.ID };
+      break;
+    }
+    case 'atualizarContratoVeiculo': {
+      const veiculo = db.veiculos.find((v) => v.ID === payload.ID);
+      if (!veiculo) throw new Error('Veículo não encontrado: ' + payload.ID);
+      veiculo.DataAssinaturaContrato = payload.DataAssinaturaContrato || '';
+      veiculo.PeriodoContratoMeses = payload.PeriodoContratoMeses || '';
+      veiculo.VencimentoContrato = payload.VencimentoContrato || '';
+      resultado = veiculo;
       break;
     }
     case 'criarColaborador':
@@ -425,9 +440,16 @@ export function mockCall(action, payload = {}) {
       db.materiaisReferencia.push({
         ID: id, Identificacao: payload.Identificacao, Certificador: payload.Certificador || '', NumeroCertificado: payload.NumeroCertificado || '',
         Lote: payload.Lote || '', IncertezaMedicao: payload.IncertezaMedicao || '', Validade: payload.Validade || '',
-        Status: payload.Status || 'Em uso', Observacoes: payload.Observacoes || ''
+        Status: payload.Status || 'Em uso', ColaboradorAtual: payload.ColaboradorAtual || '', Observacoes: payload.Observacoes || ''
       });
       resultado = { ID: id };
+      break;
+    }
+    case 'atualizarResponsavelMaterialReferencia': {
+      const material = db.materiaisReferencia.find((m) => String(m.ID) === String(payload.ID));
+      if (!material) throw new Error('Material de referência não encontrado: ' + payload.ID);
+      material.ColaboradorAtual = payload.ColaboradorAtual || '';
+      resultado = { ID: material.ID, ColaboradorAtual: material.ColaboradorAtual };
       break;
     }
     default:

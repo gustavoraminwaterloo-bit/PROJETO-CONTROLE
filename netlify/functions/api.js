@@ -72,6 +72,13 @@ exports.handler = async (event) => {
     return json(403, { ok: false, error: 'Ação não permitida para este perfil de acesso.' });
   }
 
+  // Analista só reserva em nome dele mesmo — o servidor força isso (não confia
+  // no que o front-end mandou), pra facilitar a supervisão e impedir que
+  // alguém reserve usando o nome de outro colaborador.
+  if (sessao.papel === 'analista' && action === 'criarReserva' && payload) {
+    payload.Colaborador = sessao.nome;
+  }
+
   // Criação de usuário: a senha em texto puro só existe aqui, na Netlify Function
   // — vira hash antes de qualquer chamada ao Apps Script/planilha (nunca é salva
   // em texto puro em lugar nenhum).

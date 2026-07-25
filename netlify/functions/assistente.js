@@ -96,7 +96,13 @@ exports.handler = async (event) => {
         if (!acaoPermitidaParaPapel(body.ferramenta, sessao.papel)) {
           return json(403, { ok: false, error: 'Ação não permitida para este perfil de acesso.' });
         }
-        const resultado = await chamarAppsScript(body.ferramenta, body.parametros || {});
+        const parametros = body.parametros || {};
+        // Mesma trava do api.js: analista só reserva em nome dele mesmo, mesmo
+        // que tenha pedido pra IA reservar em nome de outra pessoa.
+        if (sessao.papel === 'analista' && body.ferramenta === 'criarReserva') {
+          parametros.Colaborador = sessao.nome;
+        }
+        const resultado = await chamarAppsScript(body.ferramenta, parametros);
         conteudoResultado = JSON.stringify(resultado);
       }
       mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: body.toolUseId, name: body.ferramenta, content: conteudoResultado }] });

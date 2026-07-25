@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { escapeHtml, formatarMoeda, formatarData, formatarDataHora, classeBadgeStatus } from '../util.js';
-import { eAdmin } from '../app.js';
+import { eAdmin, nomeAtual } from '../app.js';
 
 function linhaHistorico(m) {
   const detalhes = [];
@@ -91,10 +91,15 @@ export async function viewVeiculoDetalhe(main, { id }) {
           esteve com o veículo em cada data, sem alterar a alocação padrão.</p>
         <form id="form-reserva" style="margin-top:10px">
           <label>Colaborador
-            <select name="Colaborador" required>
-              <option value="" disabled selected>Selecione...</option>
-              ${opcoesColaboradores}
-            </select>
+            ${eAdmin() ? `
+              <select name="Colaborador" required>
+                <option value="" disabled selected>Selecione...</option>
+                ${opcoesColaboradores}
+              </select>
+            ` : `
+              <input type="text" value="${escapeHtml(nomeAtual())}" disabled />
+              <input type="hidden" name="Colaborador" value="${escapeHtml(nomeAtual())}" />
+            `}
           </label>
           <label>Saída (data e hora) <input name="DataHoraSaida" type="datetime-local" required /></label>
           <label>Previsão de retorno <input name="PrevisaoRetorno" type="datetime-local" /></label>

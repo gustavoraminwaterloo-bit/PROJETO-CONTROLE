@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { escapeHtml, formatarDataHora, classeBadgeStatus, ordenarPor, paginar, abrirModal, fecharModal } from '../util.js';
 import { icons } from '../icons.js';
-import { nomeAtual } from '../app.js';
+import { nomeAtual, eAdmin } from '../app.js';
 
 const STATUS = ['Agendado', 'Em andamento', 'Concluído', 'Cancelado'];
 const POR_PAGINA = 10;
@@ -218,10 +218,15 @@ export async function viewReservaNova(main) {
           </select>
         </label>
         <label>Colaborador *
-          <select name="Colaborador" required>
-            <option value="" disabled ${colaboradores.some((c) => c.Nome === nomeAtual()) ? '' : 'selected'}>Selecione...</option>
-            ${colaboradores.map((c) => `<option ${c.Nome === nomeAtual() ? 'selected' : ''}>${escapeHtml(c.Nome)}</option>`).join('')}
-          </select>
+          ${eAdmin() ? `
+            <select name="Colaborador" required>
+              <option value="" disabled ${colaboradores.some((c) => c.Nome === nomeAtual()) ? '' : 'selected'}>Selecione...</option>
+              ${colaboradores.map((c) => `<option ${c.Nome === nomeAtual() ? 'selected' : ''}>${escapeHtml(c.Nome)}</option>`).join('')}
+            </select>
+          ` : `
+            <input type="text" value="${escapeHtml(nomeAtual())}" disabled />
+            <input type="hidden" name="Colaborador" value="${escapeHtml(nomeAtual())}" />
+          `}
         </label>
         <label>Saída (data e hora) *
           <input name="DataHoraSaida" id="input-saida" type="datetime-local" required value="${agoraParaInputDatetime()}" />

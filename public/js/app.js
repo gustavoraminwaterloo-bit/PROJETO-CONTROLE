@@ -1,6 +1,6 @@
 import { MODO_DEMO, api } from './api.js';
 import { icons } from './icons.js';
-import { formatarData, iniciaisNome, linkDoAviso } from './util.js';
+import { formatarData, iniciaisNome, linkDoAviso, escapeHtml } from './util.js';
 import { viewLogin } from './views/login.js';
 import { viewDashboard } from './views/dashboard.js';
 import { viewItens, viewItemForm } from './views/itens.js';
@@ -16,16 +16,39 @@ import { viewProjetos } from './views/projetos.js';
 import { viewMateriaisReferencia } from './views/materiaisReferencia.js';
 import { viewEtiquetas } from './views/etiquetas.js';
 import { viewAssistente } from './views/assistente.js';
+import { viewReservas, viewReservaNova } from './views/reservas.js';
+import { viewUsuarios } from './views/usuarios.js';
 
 const CHAVE_LOGADO = MODO_DEMO ? 'cip_demo_logado' : 'cip_logado';
+const CHAVE_PAPEL = MODO_DEMO ? 'cip_demo_papel' : 'cip_papel';
+const CHAVE_NOME = MODO_DEMO ? 'cip_demo_nome' : 'cip_nome';
 
 export function estaLogado() {
   return sessionStorage.getItem(CHAVE_LOGADO) === '1' || localStorage.getItem(CHAVE_LOGADO) === '1';
 }
 
-export function marcarLogado(valor) {
-  if (valor) sessionStorage.setItem(CHAVE_LOGADO, '1');
-  else { sessionStorage.removeItem(CHAVE_LOGADO); }
+export function marcarLogado(valor, papel, nome) {
+  if (valor) {
+    sessionStorage.setItem(CHAVE_LOGADO, '1');
+    sessionStorage.setItem(CHAVE_PAPEL, papel || 'admin');
+    sessionStorage.setItem(CHAVE_NOME, nome || 'Administrador');
+  } else {
+    sessionStorage.removeItem(CHAVE_LOGADO);
+    sessionStorage.removeItem(CHAVE_PAPEL);
+    sessionStorage.removeItem(CHAVE_NOME);
+  }
+}
+
+export function papelAtual() {
+  return sessionStorage.getItem(CHAVE_PAPEL) || 'admin';
+}
+
+export function nomeAtual() {
+  return sessionStorage.getItem(CHAVE_NOME) || 'Administrador';
+}
+
+export function eAdmin() {
+  return papelAtual() === 'admin';
 }
 
 const ROTAS = [
@@ -46,22 +69,37 @@ const ROTAS = [
   { padrao: /^#\/projetos$/, view: viewProjetos },
   { padrao: /^#\/materiais-referencia$/, view: viewMateriaisReferencia },
   { padrao: /^#\/etiquetas$/, view: viewEtiquetas },
-  { padrao: /^#\/assistente$/, view: viewAssistente }
+  { padrao: /^#\/assistente$/, view: viewAssistente },
+  { padrao: /^#\/reservas$/, view: viewReservas },
+  { padrao: /^#\/reservas\/nova$/, view: viewReservaNova },
+  { padrao: /^#\/usuarios$/, view: viewUsuarios }
 ];
 
-const ITENS_MENU = [
+const ITENS_MENU_ADMIN = [
   ['#/', 'Painel', 'painel'],
   ['#/assistente', 'Assistente', 'assistente'],
   ['#/itens', 'Itens', 'box'],
   ['#/equipamentos', 'Equipamentos', 'equipamento'],
   ['#/veiculos', 'Veículos', 'veiculo'],
+  ['#/reservas', 'Reservas', 'calendario'],
   ['#/entrada', 'Entrada', 'entrada'],
   ['#/saida', 'Saída', 'saida'],
   ['#/colaboradores', 'Colaboradores', 'colaboradores'],
   ['#/projetos', 'Projetos', 'projetos'],
   ['#/materiais-referencia', 'Materiais de Referência', 'frasco'],
-  ['#/etiquetas', 'Etiquetas', 'etiqueta']
+  ['#/etiquetas', 'Etiquetas', 'etiqueta'],
+  ['#/usuarios', 'Usuários', 'usuario']
 ];
+
+const ITENS_MENU_ANALISTA = [
+  ['#/reservas', 'Reservas', 'calendario'],
+  ['#/veiculos', 'Veículos', 'veiculo'],
+  ['#/assistente', 'Assistente', 'assistente']
+];
+
+function itensMenu() {
+  return eAdmin() ? ITENS_MENU_ADMIN : ITENS_MENU_ANALISTA;
+}
 
 function layoutBase() {
   const app = document.getElementById('app');
@@ -75,10 +113,10 @@ function layoutBase() {
         </div>
         <nav class="sidebar-nav" id="menu"></nav>
         <div class="sidebar-user">
-          <div class="avatar">${iniciaisNome('Administrador')}</div>
+          <div class="avatar">${escapeHtml(iniciaisNome(nomeAtual()))}</div>
           <div class="info">
-            <div class="nome">Administrador</div>
-            <div class="papel">${MODO_DEMO ? 'Modo demonstração' : 'Sessão ativa'}</div>
+            <div class="nome">${escapeHtml(nomeAtual())}</div>
+            <div class="papel">${MODO_DEMO ? 'Modo demonstração' : (eAdmin() ? 'Administrador' : 'Analista')}</div>
           </div>
           <button id="btn-sair" class="no-print" title="Sair" aria-label="Sair">${icons.sair}</button>
         </div>
@@ -183,12 +221,17 @@ function atualizarMenu() {
   const menu = document.getElementById('menu');
   if (!menu) return;
   const atual = location.hash || '#/';
-  menu.innerHTML = ITENS_MENU.map(([href, rotulo, icone]) =>
+  menu.innerHTML = itensMenu().map(([href, rotulo, icone]) =>
     `<a href="${href}" class="${atual === href ? 'ativo' : ''}">${icons[icone] || ''}<span>${rotulo}</span></a>`
   ).join('');
   document.getElementById('sidebar')?.classList.remove('aberta');
   document.getElementById('overlay-sidebar')?.classList.remove('ativa');
 }
+
+// Rotas que o papel "analista" pode acessar — o resto (Itens, Equipamentos,
+// Usuários etc.) é redirecionado pra Reservas. É só conveniência de UX; a
+// segurança de verdade é a allowlist de ações no servidor (netlify/functions/api.js).
+const ROTAS_ANALISTA_ = [/^#\/reservas$/, /^#\/reservas\/nova$/, /^#\/veiculos$/, /^#\/veiculo\//, /^#\/assistente$/, /^#\/login$/];
 
 async function rotear() {
   const hash = location.hash || '#/';
@@ -198,7 +241,12 @@ async function rotear() {
     return;
   }
 
-  const rota = ROTAS.find((r) => r.padrao.test(hash)) || { view: viewDashboard };
+  if (estaLogado() && !eAdmin() && !ROTAS_ANALISTA_.some((r) => r.test(hash))) {
+    location.hash = '#/reservas';
+    return;
+  }
+
+  const rota = ROTAS.find((r) => r.padrao.test(hash)) || { view: eAdmin() ? viewDashboard : viewReservas };
   const match = rota.padrao ? hash.match(rota.padrao) : null;
   const params = {};
   if (rota.params && match) rota.params.forEach((nome, i) => { params[nome] = decodeURIComponent(match[i + 1]); });

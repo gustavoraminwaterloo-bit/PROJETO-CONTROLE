@@ -6,7 +6,7 @@
 # interface sem backend configurado, abra o site com ?mock=1 (modo de demonstração local).
 
 param(
-  [int]$Port = 8843
+  [int]$Port = $(if ($env:PORT) { [int]$env:PORT } else { 8843 })
 )
 
 $Root = Join-Path (Split-Path -Parent $PSScriptRoot) "public"
@@ -37,6 +37,7 @@ while ($listener.IsListening) {
       $contentType = $mime[$ext]
       if (-not $contentType) { $contentType = 'application/octet-stream' }
       $bytes = [System.IO.File]::ReadAllBytes($filePath)
+      $res.Headers.Add('Cache-Control', 'no-store')
       $res.ContentType = $contentType
       $res.ContentLength64 = $bytes.Length
       $res.OutputStream.Write($bytes, 0, $bytes.Length)

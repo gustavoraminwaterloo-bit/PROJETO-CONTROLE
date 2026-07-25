@@ -31,7 +31,8 @@ site) — defina algo memorável só na hora do Passo 4.
 ## Passo 1 — Criar a planilha no Google Sheets
 
 1. Crie uma planilha nova em [sheets.google.com](https://sheets.google.com).
-2. Crie as 7 abas com os cabeçalhos exatos descritos em `docs/planilha-modelo.md`.
+2. Crie as 9 abas com os cabeçalhos exatos descritos em `docs/planilha-modelo.md` (inclui as abas
+   `Reservas` e `Usuarios`, usadas pela reserva de veículos e pelo login dos analistas).
 3. Copie o **ID da planilha**: é o trecho da URL entre `/d/` e `/edit`.
    Ex: `https://docs.google.com/spreadsheets/d/ESTE_TRECHO_AQUI/edit` → `ESTE_TRECHO_AQUI`.
 
@@ -84,7 +85,9 @@ nome em **Site settings → Site details → Change site name**.
 ## Passo 5 — Assistente de IA (opcional)
 
 O menu **Assistente** permite conversar com o sistema (consultar dados, colar/anexar linhas de
-planilha para cadastrar em lote, e — com sua confirmação — registrar ações). Suporta dois
+planilha para cadastrar em lote, verificar disponibilidade e reservar veículos por conversa, e — com
+sua confirmação — registrar ações). Quando quem está logado é um analista, o Assistente só usa as
+ferramentas do escopo dele (Reservas/Veículos) — o resto fica indisponível mesmo para a IA. Suporta dois
 provedores de IA; por padrão usa o **Gemini** (Google), que dá pra ativar com sua própria conta
 Google, sem depender de aprovação de outra pessoa:
 
@@ -97,6 +100,21 @@ Google, sem depender de aprovação de outra pessoa:
 
 Sem essa variável configurada, as outras telas do site continuam funcionando normalmente — só o
 Assistente fica indisponível.
+
+## Passo 6 — Login dos analistas (opcional)
+
+Além da sua senha de administrador (`ADMIN_PASSWORD`), o site tem um segundo tipo de acesso, mais
+restrito, para quem só precisa reservar veículos da frota — sem ver Itens, Equipamentos, Materiais de
+Referência etc. Não exige nenhuma variável de ambiente nova:
+
+1. Entre no site como administrador e vá em **Usuários** (menu lateral).
+2. Em "Novo analista", preencha nome, um usuário (login) e uma senha, e clique em "Criar analista".
+   Combine essa senha com a pessoa por fora do site (ex: pessoalmente ou por mensagem) — o sistema
+   nunca mostra a senha de volta depois de criada.
+3. A pessoa entra pela tela de login, clicando na aba "Analista" (em vez de "Administrador"), com o
+   usuário e a senha que você definiu.
+4. Pra desativar o acesso de alguém, volte em **Usuários** e clique em "Desativar" na linha da pessoa
+   — o login para de funcionar, mas o histórico de reservas feitas por ela continua no sistema.
 
 > **Alternativa (Claude/Anthropic)**: se no futuro você tiver acesso a uma chave da Anthropic, dá
 > pra trocar de provedor sem mudar código — adicione `IA_PROVIDER=claude` e `ANTHROPIC_API_KEY` nas
@@ -115,6 +133,12 @@ Assistente fica indisponível.
 - Veículos da frota ficam em **Veículos** — alocação fixa a um colaborador (normalmente um
   técnico), igual ao fluxo de Itens. A página **Colaboradores** mostra, para cada pessoa, tudo que
   ela tem no momento (itens de TI, veículo e equipamentos em locação).
+- **Reservas** é onde se agenda ou retira um veículo por período (data/hora de saída e retorno) —
+  serve tanto para veículos de uso compartilhado (ex: um carro usado por vários analistas) quanto
+  para emprestar temporariamente o veículo fixo de um técnico, sem mudar quem é o responsável padrão
+  dele. Cada reserva registra hodômetro e combustível na devolução, e fica fácil consultar depois
+  quem esteve com qual veículo em qual data (útil, por exemplo, pra apurar uma multa de trânsito).
+  A tela **Veículos** mostra a disponibilidade de cada um "hoje" com base nas reservas ativas.
 - Gere e imprima as etiquetas de QR Code em **Etiquetas** — ajuste o tamanho conforme sua impressora
   térmica antes de imprimir. Cada QR abre a página de histórico daquele item/equipamento.
 - O **Painel** mostra avisos de calibração de equipamentos e validade de materiais de referência
@@ -137,9 +161,16 @@ Script (Passo 2), já que é isso que dá acesso à planilha real e a senha de v
 - A senha (`ADMIN_PASSWORD`) e o segredo do Apps Script (`APPS_SCRIPT_SECRET`) nunca ficam visíveis
   no navegador — só a Netlify Function (que roda no servidor da Netlify) os conhece.
 - A sessão de login expira em 12 horas; depois disso é preciso digitar a senha de novo.
-- Isso é adequado para uma ferramenta interna de uso único (você como administrador). Não é um
-  sistema com múltiplos usuários/permissões — se no futuro vários colaboradores precisarem de login
-  próprio, vale migrar para uma autenticação mais robusta (ex: Netlify Identity ou Google OAuth).
+- Isso é adequado para uma ferramenta interna de uso único (você como administrador) — e, desde a
+  aba `Usuarios`, também para um número pequeno de analistas com acesso reduzido (só reserva de
+  veículos). A senha de cada analista nunca é salva em texto puro: vira um hash (calculado na Netlify
+  Function com o mesmo `SESSION_SECRET`) antes de chegar na planilha. Ainda assim, é uma segurança de
+  nível básico, pensada para poucas pessoas de confiança — se o número de usuários crescer muito ou
+  o dado ficar mais sensível, vale migrar para uma autenticação mais robusta (ex: Netlify Identity ou
+  Google OAuth).
+- Cada ação chamada pelo site é conferida no servidor contra o perfil da sessão — um analista logado
+  não consegue chamar ações fora do escopo de reserva de veículos mesmo tentando direto pela API
+  (a Netlify Function recusa com erro 403), não é só o menu que fica escondido na tela.
 - O **Assistente** nunca executa uma ação que altera dados (cadastrar, registrar entrada/saída/
   locação/devolução/calibração, importação em lote) sozinho — ele sempre para e mostra um cartão de
   confirmação, e só chama o Apps Script depois que você clica em "Confirmar". A chave de IA

@@ -20,7 +20,11 @@ function seed() {
       { ID: 'MP-01', Descricao: 'Medidor Multiparâmetro HI 98194', Marca: 'Hanna', NumeroSerie: '5090070101', DataCompra: '2022-05-01', ValorPago: 8500, Fornecedor: 'Fornecedor Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Sala da Logística', UltimaCalibracao: '2025-08-01', ProximaCalibracao: semanasA(20), NumeroCertificadoCalibracao: 'CERT-1234', Observacoes: '' }
     ],
     veiculos: [
-      { ID: 'CARRO-01', Placa: 'ABC1D23', Descricao: 'Fiat Strada', Marca: 'Fiat', Ano: '2022', Quilometragem: 32000, DataCompra: '2022-03-01', ValorPago: 95000, Fornecedor: 'Concessionária Exemplo', Status: 'Com colaborador', ColaboradorAtual: 'Fernando Luna', LocalArmazenamento: '', Observacoes: '' }
+      { ID: 'CARRO-01', Placa: 'ABC1D23', Descricao: 'Fiat Strada', Marca: 'Fiat', Ano: '2022', Quilometragem: 32000, DataCompra: '2022-03-01', ValorPago: 95000, Fornecedor: 'Concessionária Exemplo', Status: 'Com colaborador', ColaboradorAtual: 'Fernando Luna', LocalArmazenamento: '', Observacoes: '' },
+      { ID: 'CARRO-02', Placa: 'DEF4G56', Descricao: 'Hyundai HB20', Marca: 'Hyundai', Ano: '2023', Quilometragem: 15400, DataCompra: '2023-01-15', ValorPago: 78000, Fornecedor: 'Concessionária Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Garagem', Observacoes: 'Uso compartilhado por analistas' }
+    ],
+    reservas: [
+      { ID: 'RES-EX0001', VeiculoID: 'CARRO-02', Colaborador: 'Samantha Stocco', Projeto: 'P0001-EXEMPLO', Destino: 'Cliente Exemplo', DataHoraSaida: semanasA(1) + 'T08:00', PrevisaoRetorno: semanasA(1) + 'T18:00', DataHoraRetorno: '', HodometroSaida: 15400, HodometroChegada: '', CombustivelLitros: '', CombustivelCusto: '', Status: 'Agendado', Observacoes: '' }
     ],
     movimentacoes: [
       { ID: 'MOV-EX0001', DataHora: '2023-02-10T10:00:00', ItemID: 'NB-001', Tipo: 'Entrada-Compra', Quantidade: 1, ValorUnitario: 3200, Fornecedor: 'Fornecedor Exemplo', ProjetoDestino: '', ColaboradorEnvolvido: '', ChecadoPor: '', DataDevolucaoPrevista: '', DataDevolucaoReal: '', Observacoes: 'Registro de exemplo' },
@@ -36,6 +40,9 @@ function seed() {
     ],
     materiaisReferencia: [
       { ID: 'MR-EX01', Identificacao: 'MR-Solução Tampão de pH 7,01', Certificador: 'Elus', NumeroCertificado: 'MR-053/250225-ELPHS7-1673', Lote: '1673', IncertezaMedicao: 'pH (7,01 ± 0,03) @ 25°C', Validade: semanasA(40), Status: 'Em uso', Observacoes: '' }
+    ],
+    usuarios: [
+      { Nome: 'Samantha Stocco', Usuario: 'samantha.stocco', SenhaHash: 'demo', Papel: 'analista', Status: 'Ativo' }
     ]
   };
 }
@@ -50,6 +57,8 @@ function carregar() {
   const db = JSON.parse(bruto);
   if (!db.equipamentos) db.equipamentos = [];
   if (!db.veiculos) db.veiculos = [];
+  if (!db.reservas) db.reservas = [];
+  if (!db.usuarios) db.usuarios = [];
   return db;
 }
 
@@ -59,6 +68,14 @@ function salvar(db) {
 
 export function resetarDadosDemo() {
   localStorage.removeItem(CHAVE);
+}
+
+// Usado só pelo login de analista em modo de demonstração, pra pré-selecionar
+// o nome certo nos formulários (o login em si aceita qualquer senha, igual ao
+// login de admin em modo demo).
+export function encontrarUsuarioDemo(usuario) {
+  const db = carregar();
+  return db.usuarios.find((u) => u.Usuario.toLowerCase() === String(usuario || '').toLowerCase() && u.Status !== 'Inativo');
 }
 
 function novoId(prefixo) {
@@ -119,6 +136,28 @@ function acharAlvo(db, id) {
   const veiculo = db.veiculos.find((v) => String(v.ID) === String(id));
   if (veiculo) return veiculo;
   throw new Error('Item/veículo não encontrado: ' + id);
+}
+
+function acharReserva(db, id) {
+  const reserva = db.reservas.find((r) => String(r.ID) === String(id));
+  if (!reserva) throw new Error('Reserva não encontrada: ' + id);
+  return reserva;
+}
+
+function fimDaReserva(r) {
+  return new Date(r.DataHoraRetorno || r.PrevisaoRetorno || r.DataHoraSaida);
+}
+
+function reservasAtivas(db, veiculoId) {
+  return db.reservas.filter((r) => String(r.VeiculoID) === String(veiculoId) && (r.Status === 'Agendado' || r.Status === 'Em andamento'));
+}
+
+function verificarDisponibilidade(db, veiculoId, inicio, fim) {
+  if (!veiculoId || !inicio) throw new Error('Informe o veículo e a data/hora de início.');
+  const inicioData = new Date(inicio);
+  const fimData = fim ? new Date(fim) : new Date(inicioData.getTime() + 60 * 60 * 1000);
+  const conflitos = reservasAtivas(db, veiculoId).filter((r) => inicioData < fimDaReserva(r) && new Date(r.DataHoraSaida) < fimData);
+  return { disponivel: conflitos.length === 0, conflitos };
 }
 
 export function mockCall(action, payload = {}) {
@@ -288,6 +327,98 @@ export function mockCall(action, payload = {}) {
       db.projetos.push({ Codigo: payload.Codigo, Cliente: payload.Cliente || '', Status: payload.Status || 'Ativo' });
       resultado = { Codigo: payload.Codigo };
       break;
+    case 'listReservas': {
+      let lista = [...db.reservas].sort((a, b) => new Date(b.DataHoraSaida) - new Date(a.DataHoraSaida));
+      if (payload.veiculoId) lista = lista.filter((r) => String(r.VeiculoID) === String(payload.veiculoId));
+      if (payload.colaborador) lista = lista.filter((r) => r.Colaborador === payload.colaborador);
+      if (payload.status) lista = lista.filter((r) => r.Status === payload.status);
+      resultado = lista;
+      break;
+    }
+    case 'getReserva':
+      resultado = acharReserva(db, payload.id);
+      break;
+    case 'verificarDisponibilidade':
+      resultado = verificarDisponibilidade(db, payload.veiculoId, payload.inicio, payload.fim);
+      break;
+    case 'responsavelNaData': {
+      if (!payload.veiculoId || !payload.data) throw new Error('Informe o veículo e a data.');
+      const alvo = new Date(payload.data);
+      const reserva = db.reservas.find((r) => String(r.VeiculoID) === String(payload.veiculoId) && r.Status !== 'Cancelado' && new Date(r.DataHoraSaida) <= alvo && alvo <= fimDaReserva(r));
+      if (reserva) {
+        resultado = { veiculoId: payload.veiculoId, data: payload.data, colaborador: reserva.Colaborador, origem: 'reserva', reservaId: reserva.ID };
+      } else {
+        const veiculo = acharVeiculo(db, payload.veiculoId);
+        resultado = { veiculoId: payload.veiculoId, data: payload.data, colaborador: veiculo.ColaboradorAtual || '', origem: 'padrao' };
+      }
+      break;
+    }
+    case 'criarReserva': {
+      if (!payload.VeiculoID || !payload.Colaborador || !payload.DataHoraSaida) throw new Error('Informe o veículo, o colaborador e a data/hora de saída.');
+      acharVeiculo(db, payload.VeiculoID);
+      if (!verificarDisponibilidade(db, payload.VeiculoID, payload.DataHoraSaida, payload.PrevisaoRetorno).disponivel) {
+        throw new Error('Veículo já reservado nesse período.');
+      }
+      const registro = {
+        ID: novoId('RES'), VeiculoID: payload.VeiculoID, Colaborador: payload.Colaborador, Projeto: payload.Projeto || '',
+        Destino: payload.Destino || '', DataHoraSaida: payload.DataHoraSaida, PrevisaoRetorno: payload.PrevisaoRetorno || '',
+        DataHoraRetorno: '', HodometroSaida: Number(payload.HodometroSaida) || 0, HodometroChegada: '', CombustivelLitros: '', CombustivelCusto: '',
+        Status: new Date(payload.DataHoraSaida) <= new Date() ? 'Em andamento' : 'Agendado', Observacoes: payload.Observacoes || ''
+      };
+      db.reservas.push(registro);
+      resultado = registro;
+      break;
+    }
+    case 'iniciarRetiradaReserva': {
+      const reserva = acharReserva(db, payload.ID);
+      if (reserva.Status !== 'Agendado') throw new Error('Esta reserva não está aguardando retirada.');
+      reserva.Status = 'Em andamento';
+      if (payload.HodometroSaida !== undefined && payload.HodometroSaida !== '') reserva.HodometroSaida = Number(payload.HodometroSaida);
+      if (payload.DataHoraSaida) reserva.DataHoraSaida = payload.DataHoraSaida;
+      resultado = reserva;
+      break;
+    }
+    case 'registrarRetornoReserva': {
+      const reserva = acharReserva(db, payload.ID);
+      if (reserva.Status !== 'Em andamento' && reserva.Status !== 'Agendado') throw new Error('Esta reserva já foi concluída ou cancelada.');
+      reserva.DataHoraRetorno = payload.DataHoraRetorno || new Date().toISOString();
+      reserva.HodometroChegada = Number(payload.HodometroChegada) || 0;
+      reserva.CombustivelLitros = payload.CombustivelLitros !== undefined && payload.CombustivelLitros !== '' ? Number(payload.CombustivelLitros) : '';
+      reserva.CombustivelCusto = payload.CombustivelCusto !== undefined && payload.CombustivelCusto !== '' ? Number(payload.CombustivelCusto) : '';
+      reserva.Status = 'Concluído';
+      if (payload.Observacoes) reserva.Observacoes = (reserva.Observacoes ? reserva.Observacoes + ' | ' : '') + payload.Observacoes;
+      if (payload.HodometroChegada) acharVeiculo(db, reserva.VeiculoID).Quilometragem = Number(payload.HodometroChegada);
+      resultado = reserva;
+      break;
+    }
+    case 'cancelarReserva': {
+      const reserva = acharReserva(db, payload.ID);
+      if (reserva.Status === 'Concluído') throw new Error('Esta reserva já foi concluída, não pode ser cancelada.');
+      reserva.Status = 'Cancelado';
+      reserva.Observacoes = (reserva.Observacoes ? reserva.Observacoes + ' | ' : '') + (payload.Observacoes || 'Cancelada.');
+      resultado = reserva;
+      break;
+    }
+    case 'listUsuarios':
+      resultado = db.usuarios.map((u) => ({ Nome: u.Nome, Usuario: u.Usuario, Papel: u.Papel, Status: u.Status }));
+      break;
+    case 'criarUsuario': {
+      // Em modo de demonstração não há Netlify Function pra fazer o hash antes —
+      // aceita a senha em texto puro só pra alimentar os dados de exemplo locais.
+      const senha = payload.SenhaHash || payload.senha;
+      if (!payload.Nome || !payload.Usuario || !senha) throw new Error('Informe nome, usuário e senha.');
+      if (db.usuarios.some((u) => u.Usuario.toLowerCase() === payload.Usuario.toLowerCase())) throw new Error('Já existe um usuário com este nome de usuário: ' + payload.Usuario);
+      db.usuarios.push({ Nome: payload.Nome, Usuario: payload.Usuario, SenhaHash: senha, Papel: 'analista', Status: 'Ativo' });
+      resultado = { Usuario: payload.Usuario };
+      break;
+    }
+    case 'desativarUsuario': {
+      const usuario = db.usuarios.find((u) => u.Usuario === payload.Usuario);
+      if (!usuario) throw new Error('Usuário não encontrado: ' + payload.Usuario);
+      usuario.Status = 'Inativo';
+      resultado = { Usuario: payload.Usuario };
+      break;
+    }
     case 'criarMaterialReferencia': {
       if (!payload.Identificacao) throw new Error('Informe a identificação do material.');
       const id = payload.ID || novoId('MR');

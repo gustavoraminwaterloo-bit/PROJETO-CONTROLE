@@ -3,7 +3,14 @@ const BASE = (paths, viewBox = '0 0 24 24') =>
   `<svg viewBox="${viewBox}" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 
 export const icons = {
-  logo: BASE('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
+  // Marca inspirada no símbolo da Waterloo Brasil (círculos + setas de fluxo).
+  logo: `<svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+    <circle cx="13" cy="12" r="10" fill="currentColor"/>
+    <path d="M17 8L9 16M9 10L9 16L15 16" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="13" cy="28" r="10" fill="currentColor"/>
+    <path d="M8 28L18 28M13 23L18 28L13 33" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="29" cy="28" r="8" fill="currentColor" opacity="0.55"/>
+  </svg>`,
   painel: BASE('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
   box: BASE('<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>'),
   entrada: BASE('<path d="M12 5v11"/><path d="M6 11l6 6 6-6"/><path d="M4 20h16"/>'),
@@ -20,6 +27,8 @@ export const icons = {
   busca: BASE('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>'),
   sino: BASE('<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>'),
   usuario: BASE('<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>'),
+  chave: BASE('<circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8L20 3M20 3v4.5M20 3h-4.5"/>'),
+  calendario: BASE('<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/>'),
   mais: BASE('<path d="M12 5v14"/><path d="M5 12h14"/>'),
   x: BASE('<path d="M18 6L6 18"/><path d="M6 6l12 12"/>'),
   chevronBaixo: BASE('<path d="M6 9l6 6 6-6"/>'),

@@ -1,4 +1,4 @@
-import { mockCall } from './mockData.js';
+import { mockCall, encontrarUsuarioDemo } from './mockData.js';
 
 // Modo de demonstração: liga automaticamente quando o site é aberto como
 // arquivo local (sem servidor) ou quando o usuário força com ?mock=1.
@@ -12,7 +12,12 @@ export const MODO_DEMO = location.protocol === 'file:' || localStorage.getItem('
 async function chamar(action, payload) {
   if (MODO_DEMO) {
     if (action === 'login') {
-      return payload && payload.senha ? { ok: true } : { ok: false, error: 'Digite uma senha.' };
+      return payload && payload.senha ? { ok: true, papel: 'admin', nome: 'Administrador' } : { ok: false, error: 'Digite uma senha.' };
+    }
+    if (action === 'loginAnalista') {
+      if (!(payload && payload.usuario && payload.senha)) return { ok: false, error: 'Informe usuário e senha.' };
+      const usuario = encontrarUsuarioDemo(payload.usuario);
+      return { ok: true, papel: 'analista', nome: usuario ? usuario.Nome : payload.usuario };
     }
     if (action === 'logout') {
       return { ok: true };
@@ -62,6 +67,7 @@ async function chamarAssistente(corpo) {
 
 export const api = {
   login: (senha) => chamar('login', { senha }),
+  loginAnalista: (usuario, senha) => chamar('loginAnalista', { usuario, senha }),
   logout: () => chamar('logout', {}),
 
   listItens: () => chamarOuFalhar('listItens'),
@@ -76,6 +82,11 @@ export const api = {
   custoPorProjeto: (projeto) => chamarOuFalhar('custoPorProjeto', { projeto }),
   listMateriaisReferencia: () => chamarOuFalhar('listMateriaisReferencia'),
   avisos: (dias) => chamarOuFalhar('avisos', { dias }),
+  listReservas: (veiculoId, colaborador, status) => chamarOuFalhar('listReservas', { veiculoId, colaborador, status }),
+  getReserva: (id) => chamarOuFalhar('getReserva', { id }),
+  verificarDisponibilidade: (veiculoId, inicio, fim) => chamarOuFalhar('verificarDisponibilidade', { veiculoId, inicio, fim }),
+  responsavelNaData: (veiculoId, data) => chamarOuFalhar('responsavelNaData', { veiculoId, data }),
+  listUsuarios: () => chamarOuFalhar('listUsuarios'),
 
   criarItem: (payload) => chamarOuFalhar('criarItem', payload),
   registrarEntrada: (payload) => chamarOuFalhar('registrarEntrada', payload),
@@ -90,6 +101,12 @@ export const api = {
   criarColaborador: (payload) => chamarOuFalhar('criarColaborador', payload),
   criarProjeto: (payload) => chamarOuFalhar('criarProjeto', payload),
   criarMaterialReferencia: (payload) => chamarOuFalhar('criarMaterialReferencia', payload),
+  criarReserva: (payload) => chamarOuFalhar('criarReserva', payload),
+  iniciarRetiradaReserva: (payload) => chamarOuFalhar('iniciarRetiradaReserva', payload),
+  registrarRetornoReserva: (payload) => chamarOuFalhar('registrarRetornoReserva', payload),
+  cancelarReserva: (payload) => chamarOuFalhar('cancelarReserva', payload),
+  criarUsuario: (payload) => chamarOuFalhar('criarUsuario', payload),
+  desativarUsuario: (payload) => chamarOuFalhar('desativarUsuario', payload),
 
   assistente: (corpo) => chamarAssistente(corpo)
 };

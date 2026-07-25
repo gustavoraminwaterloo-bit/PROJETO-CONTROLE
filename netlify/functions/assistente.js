@@ -15,8 +15,9 @@
 //   ANTHROPIC_API_KEY   -> chave de API da Anthropic (console.anthropic.com), se IA_PROVIDER=claude
 //   ANTHROPIC_MODEL      -> opcional, padrão "claude-sonnet-5"
 
-const { json, sessaoValida, chamarAppsScript } = require('./_auth');
+const { json, sessaoPayload, chamarAppsScript } = require('./_auth');
 const { paraLLM, eDeEscrita, existeFerramenta } = require('./_ferramentas');
+const { acaoPermitidaParaPapel } = require('./_permissoes');
 const iaGemini = require('./_ia_gemini');
 const iaClaude = require('./_ia_claude');
 
@@ -30,23 +31,31 @@ function dataDeHoje() {
   return new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function systemPrompt() {
+function systemPrompt(papel) {
+  const escopoAnalista = papel === 'analista'
+    ? `\n\nVocê está falando com um ANALISTA (acesso reduzido) — só pode ajudar com reserva/disponibilidade de veículos (Reservas e Veiculos). Não tente chamar ferramentas de outras áreas (Itens, Equipamentos, Usuários etc.) — elas não estão disponíveis para este perfil.`
+    : '';
   return `Você é o assistente de dados do sistema de Controle de Insumos, Patrimônio e Equipamentos de uma empresa. Hoje é ${dataDeHoje()}.
 
 O sistema controla:
 - Itens: patrimônio de TI (notebook, celular, mouse, teclado etc.), alocado a colaboradores.
 - Equipamentos: equipamentos de medição/laboratório, com calibração periódica e locação a projetos.
 - Veiculos: veículos da frota, alocados de forma fixa a colaboradores (geralmente técnicos).
+- Reservas: uso/reserva de veículos por período — agendamento futuro, retirada, devolução, e também
+  empréstimo temporário de um veículo normalmente fixo (sem mudar o responsável padrão). Serve pra
+  saber a disponibilidade de um veículo e pra descobrir quem estava de fato com ele numa certa data
+  (ferramenta responsavelNaData) — útil por exemplo pra apurar responsabilidade em multa de trânsito.
 - Colaboradores, Projetos e Materiais de Referência (com validade).
 
 Regras importantes:
 - Sempre use as ferramentas disponíveis para responder perguntas sobre dados — nunca invente números, datas ou códigos.
-- Se precisar de um código (ID) que o usuário não informou exatamente, procure primeiro com uma ferramenta de leitura (ex: listItens, listEquipamentos) antes de agir.
+- Se precisar de um código (ID) que o usuário não informou exatamente, procure primeiro com uma ferramenta de leitura (ex: listItens, listEquipamentos, listVeiculos) antes de agir.
+- Antes de criar uma reserva, verifique a disponibilidade do veículo no período (verificarDisponibilidade).
 - Chame no máximo UMA ferramenta por resposta. Se precisar de várias etapas, peça uma por vez.
 - Se o usuário colar ou descrever várias linhas de uma planilha (vários itens/equipamentos de uma vez), extraia os campos de cada linha e use a ferramenta importarLote UMA vez com todas as linhas, em vez de chamar a ferramenta de criar várias vezes.
 - Antes de propor uma ação que muda dados, explique em texto simples o que você está prestes a fazer (o usuário vai confirmar ou cancelar essa ação numa tela própria — você não precisa pedir "confirma?" em texto, só descreva a ação com clareza).
 - Se o pedido do usuário for ambíguo (ex: qual item exatamente, qual colaborador), pergunte antes de chamar uma ferramenta de escrita.
-- Seja direto e objetivo nas respostas, em português do Brasil.`;
+- Seja direto e objetivo nas respostas, em português do Brasil.${escopoAnalista}`;
 }
 
 function primeiroToolUse(content) {
@@ -57,7 +66,8 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return json(405, { ok: false, error: 'Método não permitido.' });
   }
-  if (!sessaoValida(event)) {
+  const sessao = sessaoPayload(event);
+  if (!sessao) {
     return json(401, { ok: false, error: 'Sessão expirada. Faça login novamente.' });
   }
 
@@ -83,14 +93,19 @@ exports.handler = async (event) => {
         if (!existeFerramenta(body.ferramenta) || !eDeEscrita(body.ferramenta)) {
           return json(400, { ok: false, error: 'Ação não reconhecida.' });
         }
+        if (!acaoPermitidaParaPapel(body.ferramenta, sessao.papel)) {
+          return json(403, { ok: false, error: 'Ação não permitida para este perfil de acesso.' });
+        }
         const resultado = await chamarAppsScript(body.ferramenta, body.parametros || {});
         conteudoResultado = JSON.stringify(resultado);
       }
       mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: body.toolUseId, name: body.ferramenta, content: conteudoResultado }] });
     }
 
+    const ferramentasDisponiveis = paraLLM().filter((f) => acaoPermitidaParaPapel(f.name, sessao.papel));
+
     for (let i = 0; i < MAX_ITERACOES; i++) {
-      const resposta = await chamar(mensagens, paraLLM(), systemPrompt());
+      const resposta = await chamar(mensagens, ferramentasDisponiveis, systemPrompt(sessao.papel));
       mensagens.push({ role: 'assistant', content: resposta.content });
 
       const toolUse = primeiroToolUse(resposta.content);
@@ -98,8 +113,8 @@ exports.handler = async (event) => {
         return json(200, { ok: true, mensagens, pendente: null });
       }
 
-      if (!existeFerramenta(toolUse.name)) {
-        mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, name: toolUse.name, content: 'Ferramenta desconhecida.', is_error: true }] });
+      if (!existeFerramenta(toolUse.name) || !acaoPermitidaParaPapel(toolUse.name, sessao.papel)) {
+        mensagens.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, name: toolUse.name, content: 'Ferramenta desconhecida ou não permitida para este perfil.', is_error: true }] });
         continue;
       }
 

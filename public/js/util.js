@@ -57,7 +57,11 @@ export function classeBadgeStatus(status) {
     'Em projeto': 'projeto',
     'Em locação': 'projeto',
     'Em manutenção': 'manutencao',
-    'Fora de uso': 'fora'
+    'Fora de uso': 'fora',
+    'Agendado': 'colaborador',
+    'Em andamento': 'projeto',
+    'Concluído': 'estoque',
+    'Cancelado': 'fora'
   };
   return mapa[status] || '';
 }

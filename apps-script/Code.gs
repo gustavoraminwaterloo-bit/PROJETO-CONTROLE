@@ -2,7 +2,8 @@
  * Backend do Sistema de Controle de Insumos, Patrimônio e Equipamentos.
  * Cole este arquivo no editor do Google Apps Script (script.google.com),
  * ligado a uma planilha Google Sheets com as abas:
- *   Itens, Equipamentos, Veiculos, Movimentacoes, Colaboradores, Projetos, MateriaisReferencia
+ *   Itens, Equipamentos, Veiculos, Movimentacoes, Colaboradores, Projetos, MateriaisReferencia,
+ *   Reservas, Usuarios
  * (ver docs/planilha-modelo.md para os cabeçalhos exatos de cada aba).
  *
  * Itens = patrimônio de TI (notebook, celular, mouse etc.), alocado a colaboradores.
@@ -10,6 +11,9 @@
  * Veiculos = carros da frota, alocados de forma fixa a colaboradores (mesmo padrão de Itens).
  * Movimentacoes é compartilhada pelas três, para manter um histórico único e o custo
  * por projeto consolidado.
+ * Reservas = uso de um veículo por um período (agendamento futuro, retirada imediata, empréstimo
+ * temporário de um veículo normalmente fixo, ou devolução) — independente da alocação fixa acima.
+ * Usuarios = login individual dos analistas (acesso reduzido, só à reserva de veículos).
  *
  * Configuração necessária (menu Configuração do projeto > Propriedades do script):
  *   SHEET_ID     -> ID da planilha (está na URL entre /d/ e /edit)
@@ -121,7 +125,7 @@ function doPost(e) {
   }
 }
 
-var READ_ACTIONS_ = ['listItens', 'getItem', 'listEquipamentos', 'getEquipamento', 'listVeiculos', 'getVeiculo', 'listMovimentacoes', 'listColaboradores', 'listProjetos', 'custoPorProjeto', 'listMateriaisReferencia', 'avisos'];
+var READ_ACTIONS_ = ['listItens', 'getItem', 'listEquipamentos', 'getEquipamento', 'listVeiculos', 'getVeiculo', 'listMovimentacoes', 'listColaboradores', 'listProjetos', 'custoPorProjeto', 'listMateriaisReferencia', 'avisos', 'listReservas', 'getReserva', 'verificarDisponibilidade', 'responsavelNaData', 'verificarUsuario', 'listUsuarios'];
 
 function routeAny_(action, params) {
   return READ_ACTIONS_.indexOf(action) !== -1 ? routeRead_(action, params) : routeWrite_(action, params);
@@ -153,6 +157,18 @@ function routeRead_(action, params) {
       return sheetToObjects_(getSheet_('MateriaisReferencia'));
     case 'avisos':
       return avisos_(params.dias ? Number(params.dias) : 60);
+    case 'listReservas':
+      return listReservas_(params.veiculoId, params.colaborador, params.status);
+    case 'getReserva':
+      return getReserva_(params.id);
+    case 'verificarDisponibilidade':
+      return verificarDisponibilidade_(params.veiculoId, params.inicio, params.fim);
+    case 'responsavelNaData':
+      return responsavelNaData_(params.veiculoId, params.data);
+    case 'verificarUsuario':
+      return verificarUsuario_(params.usuario, params.senhaHash);
+    case 'listUsuarios':
+      return listUsuarios_();
     default:
       throw new Error('Ação de leitura desconhecida: ' + action);
   }
@@ -188,6 +204,18 @@ function routeWrite_(action, payload) {
       return criarMaterialReferencia_(payload);
     case 'importarLote':
       return importarLote_(payload);
+    case 'criarReserva':
+      return criarReserva_(payload);
+    case 'iniciarRetiradaReserva':
+      return iniciarRetiradaReserva_(payload);
+    case 'registrarRetornoReserva':
+      return registrarRetornoReserva_(payload);
+    case 'cancelarReserva':
+      return cancelarReserva_(payload);
+    case 'criarUsuario':
+      return criarUsuario_(payload);
+    case 'desativarUsuario':
+      return desativarUsuario_(payload);
     default:
       throw new Error('Ação de escrita desconhecida: ' + action);
   }
@@ -501,6 +529,182 @@ function criarVeiculo_(p) {
     Observacoes: p.Observacoes || ''
   });
   return { ID: p.ID };
+}
+
+// ---------------------------------------------------------------------------
+// Reservas: uso/reserva de veículos por período (agendamento, retirada,
+// empréstimo temporário de um veículo normalmente fixo, e devolução).
+// Independente da alocação fixa acima — um veículo pode ter ColaboradorAtual
+// fixo e ainda assim ter Reservas pontuais registradas em cima dele.
+// ---------------------------------------------------------------------------
+
+function listReservas_(veiculoId, colaborador, status) {
+  var all = sheetToObjects_(getSheet_('Reservas'));
+  all.sort(function (a, b) { return new Date(b.DataHoraSaida) - new Date(a.DataHoraSaida); });
+  return all.filter(function (r) {
+    if (veiculoId && String(r.VeiculoID) !== String(veiculoId)) return false;
+    if (colaborador && r.Colaborador !== colaborador) return false;
+    if (status && r.Status !== status) return false;
+    return true;
+  });
+}
+
+function getReserva_(id) {
+  var reserva = sheetToObjects_(getSheet_('Reservas')).filter(function (r) { return String(r.ID) === String(id); })[0];
+  if (!reserva) throw new Error('Reserva não encontrada: ' + id);
+  return reserva;
+}
+
+function reservasAtivas_(veiculoId) {
+  return sheetToObjects_(getSheet_('Reservas')).filter(function (r) {
+    return String(r.VeiculoID) === String(veiculoId) && (r.Status === 'Agendado' || r.Status === 'Em andamento');
+  });
+}
+
+function fimDaReserva_(r) {
+  return new Date(r.DataHoraRetorno || r.PrevisaoRetorno || r.DataHoraSaida);
+}
+
+function intervalosSobrepoem_(inicioA, fimA, inicioB, fimB) {
+  return inicioA < fimB && inicioB < fimA;
+}
+
+function verificarDisponibilidade_(veiculoId, inicio, fim) {
+  if (!veiculoId || !inicio) throw new Error('Informe o veículo e a data/hora de início.');
+  var inicioData = new Date(inicio);
+  var fimData = fim ? new Date(fim) : new Date(inicioData.getTime() + 60 * 60 * 1000);
+  var conflitos = reservasAtivas_(veiculoId).filter(function (r) {
+    return intervalosSobrepoem_(inicioData, fimData, new Date(r.DataHoraSaida), fimDaReserva_(r));
+  });
+  return { disponivel: conflitos.length === 0, conflitos: conflitos };
+}
+
+function responsavelNaData_(veiculoId, data) {
+  if (!veiculoId || !data) throw new Error('Informe o veículo e a data.');
+  var alvo = new Date(data);
+  var reservas = sheetToObjects_(getSheet_('Reservas')).filter(function (r) {
+    if (String(r.VeiculoID) !== String(veiculoId) || r.Status === 'Cancelado') return false;
+    return new Date(r.DataHoraSaida) <= alvo && alvo <= fimDaReserva_(r);
+  });
+  if (reservas.length > 0) {
+    return { veiculoId: veiculoId, data: data, colaborador: reservas[0].Colaborador, origem: 'reserva', reservaId: reservas[0].ID };
+  }
+  var veiculo = getVeiculo_(veiculoId);
+  return { veiculoId: veiculoId, data: data, colaborador: veiculo.ColaboradorAtual || '', origem: 'padrao' };
+}
+
+function criarReserva_(p) {
+  if (!p.VeiculoID || !p.Colaborador || !p.DataHoraSaida) {
+    throw new Error('Informe o veículo, o colaborador e a data/hora de saída.');
+  }
+  if (findRowIndexById_(getSheet_('Veiculos'), 'ID', p.VeiculoID) === -1) {
+    throw new Error('Veículo não cadastrado: ' + p.VeiculoID);
+  }
+  var disponibilidade = verificarDisponibilidade_(p.VeiculoID, p.DataHoraSaida, p.PrevisaoRetorno);
+  if (!disponibilidade.disponivel) throw new Error('Veículo já reservado nesse período.');
+
+  var status = new Date(p.DataHoraSaida) <= new Date() ? 'Em andamento' : 'Agendado';
+  var registro = {
+    ID: newId_('RES'),
+    VeiculoID: p.VeiculoID,
+    Colaborador: p.Colaborador,
+    Projeto: p.Projeto || '',
+    Destino: p.Destino || '',
+    DataHoraSaida: p.DataHoraSaida,
+    PrevisaoRetorno: p.PrevisaoRetorno || '',
+    DataHoraRetorno: '',
+    HodometroSaida: toNumber_(p.HodometroSaida),
+    HodometroChegada: '',
+    CombustivelLitros: '',
+    CombustivelCusto: '',
+    Status: status,
+    Observacoes: p.Observacoes || ''
+  };
+  appendObject_(getSheet_('Reservas'), registro);
+  return registro;
+}
+
+function iniciarRetiradaReserva_(p) {
+  if (!p.ID) throw new Error('Informe a reserva.');
+  var reserva = getReserva_(p.ID);
+  if (reserva.Status !== 'Agendado') throw new Error('Esta reserva não está aguardando retirada.');
+  var patch = { Status: 'Em andamento' };
+  if (p.HodometroSaida !== undefined && p.HodometroSaida !== '') patch.HodometroSaida = toNumber_(p.HodometroSaida);
+  if (p.DataHoraSaida) patch.DataHoraSaida = p.DataHoraSaida;
+  updateRowById_(getSheet_('Reservas'), 'ID', p.ID, patch);
+  return getReserva_(p.ID);
+}
+
+function registrarRetornoReserva_(p) {
+  if (!p.ID) throw new Error('Informe a reserva.');
+  var reserva = getReserva_(p.ID);
+  if (reserva.Status !== 'Em andamento' && reserva.Status !== 'Agendado') {
+    throw new Error('Esta reserva já foi concluída ou cancelada.');
+  }
+  var patch = {
+    DataHoraRetorno: p.DataHoraRetorno || new Date(),
+    HodometroChegada: toNumber_(p.HodometroChegada),
+    CombustivelLitros: p.CombustivelLitros !== undefined && p.CombustivelLitros !== '' ? toNumber_(p.CombustivelLitros) : '',
+    CombustivelCusto: p.CombustivelCusto !== undefined && p.CombustivelCusto !== '' ? toNumber_(p.CombustivelCusto) : '',
+    Status: 'Concluído'
+  };
+  if (p.Observacoes) patch.Observacoes = (reserva.Observacoes ? reserva.Observacoes + ' | ' : '') + p.Observacoes;
+  updateRowById_(getSheet_('Reservas'), 'ID', p.ID, patch);
+
+  if (p.HodometroChegada) {
+    updateRowById_(getSheet_('Veiculos'), 'ID', reserva.VeiculoID, { Quilometragem: toNumber_(p.HodometroChegada) });
+  }
+  return getReserva_(p.ID);
+}
+
+function cancelarReserva_(p) {
+  if (!p.ID) throw new Error('Informe a reserva.');
+  var reserva = getReserva_(p.ID);
+  if (reserva.Status === 'Concluído') throw new Error('Esta reserva já foi concluída, não pode ser cancelada.');
+  updateRowById_(getSheet_('Reservas'), 'ID', p.ID, {
+    Status: 'Cancelado',
+    Observacoes: (reserva.Observacoes ? reserva.Observacoes + ' | ' : '') + (p.Observacoes || 'Cancelada.')
+  });
+  return getReserva_(p.ID);
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios: login individual dos analistas (acesso reduzido, só reserva de
+// veículos). Administrador continua com a senha única ADMIN_PASSWORD, fora
+// desta aba. A senha em texto puro nunca chega até aqui — o hash é calculado
+// na Netlify Function antes de chamar estas ações (ver netlify/functions/_auth.js).
+// ---------------------------------------------------------------------------
+
+function listUsuarios_() {
+  return sheetToObjects_(getSheet_('Usuarios')).map(function (u) {
+    return { Nome: u.Nome, Usuario: u.Usuario, Papel: u.Papel, Status: u.Status };
+  });
+}
+
+function verificarUsuario_(usuario, senhaHash) {
+  if (!usuario || !senhaHash) return { ok: false };
+  var linha = sheetToObjects_(getSheet_('Usuarios')).filter(function (u) {
+    return String(u.Usuario).toLowerCase() === String(usuario).toLowerCase() && u.Status !== 'Inativo';
+  })[0];
+  if (!linha || String(linha.SenhaHash) !== String(senhaHash)) return { ok: false };
+  return { ok: true, nome: linha.Nome, papel: 'analista' };
+}
+
+function criarUsuario_(p) {
+  if (!p.Nome || !p.Usuario || !p.SenhaHash) throw new Error('Informe nome, usuário e senha.');
+  var sheet = getSheet_('Usuarios');
+  var jaExiste = sheetToObjects_(sheet).some(function (u) { return String(u.Usuario).toLowerCase() === String(p.Usuario).toLowerCase(); });
+  if (jaExiste) throw new Error('Já existe um usuário com este nome de usuário: ' + p.Usuario);
+  appendObject_(sheet, { Nome: p.Nome, Usuario: p.Usuario, SenhaHash: p.SenhaHash, Papel: 'analista', Status: 'Ativo' });
+  return { Usuario: p.Usuario };
+}
+
+function desativarUsuario_(p) {
+  if (!p.Usuario) throw new Error('Informe o usuário.');
+  var sheet = getSheet_('Usuarios');
+  if (findRowIndexById_(sheet, 'Usuario', p.Usuario) === -1) throw new Error('Usuário não encontrado: ' + p.Usuario);
+  updateRowById_(sheet, 'Usuario', p.Usuario, { Status: 'Inativo' });
+  return { Usuario: p.Usuario };
 }
 
 // ---------------------------------------------------------------------------

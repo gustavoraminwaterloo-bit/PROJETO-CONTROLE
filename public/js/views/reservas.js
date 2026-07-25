@@ -228,12 +228,14 @@ export async function viewReservaNova(main) {
             <input type="hidden" name="Colaborador" value="${escapeHtml(nomeAtual())}" />
           `}
         </label>
-        <label>Saída (data e hora) *
-          <input name="DataHoraSaida" id="input-saida" type="datetime-local" required value="${agoraParaInputDatetime()}" />
-        </label>
-        <label>Previsão de retorno
-          <input name="PrevisaoRetorno" id="input-retorno" type="datetime-local" value="${agoraParaInputDatetime(120)}" />
-        </label>
+        <div class="grid cols-2" style="grid-column: 1 / -1">
+          <label>Saída (data e hora) *
+            <input name="DataHoraSaida" id="input-saida" type="datetime-local" required value="${agoraParaInputDatetime()}" />
+          </label>
+          <label>Previsão de retorno
+            <input name="PrevisaoRetorno" id="input-retorno" type="datetime-local" value="${agoraParaInputDatetime(120)}" />
+          </label>
+        </div>
         <label>Projeto (opcional)
           <input name="Projeto" list="lista-projetos-reserva" />
           <datalist id="lista-projetos-reserva">${projetos.map((p) => `<option value="${escapeHtml(p.Codigo)}">`).join('')}</datalist>

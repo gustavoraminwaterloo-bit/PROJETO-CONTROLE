@@ -101,8 +101,10 @@ export async function viewVeiculoDetalhe(main, { id }) {
               <input type="hidden" name="Colaborador" value="${escapeHtml(nomeAtual())}" />
             `}
           </label>
-          <label>Saída (data e hora) <input name="DataHoraSaida" type="datetime-local" required /></label>
-          <label>Previsão de retorno <input name="PrevisaoRetorno" type="datetime-local" /></label>
+          <div class="grid cols-2">
+            <label>Saída (data e hora) <input name="DataHoraSaida" type="datetime-local" required /></label>
+            <label>Previsão de retorno <input name="PrevisaoRetorno" type="datetime-local" /></label>
+          </div>
           <label>Projeto
             <input name="Projeto" list="lista-projetos-veiculo" placeholder="opcional" />
             <datalist id="lista-projetos-veiculo">${projetos.map((p) => `<option value="${escapeHtml(p.Codigo)}">`).join('')}</datalist>

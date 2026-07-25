@@ -632,7 +632,6 @@ function criarReserva_(p) {
     VeiculoID: p.VeiculoID,
     Colaborador: p.Colaborador,
     Projeto: p.Projeto || '',
-    Destino: p.Destino || '',
     DataHoraSaida: p.DataHoraSaida,
     PrevisaoRetorno: p.PrevisaoRetorno || '',
     DataHoraRetorno: '',

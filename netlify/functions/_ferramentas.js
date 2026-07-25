@@ -91,7 +91,7 @@ const FERRAMENTAS = [
     linhas: { type: 'array', items: { type: 'object' } }
   }, ['aba', 'linhas'], true),
   ferramenta('criarReserva', 'Cria uma reserva de veículo — agendamento futuro (se a saída for numa data futura) ou retirada imediata (se a saída for agora). Verifique a disponibilidade antes de propor esta ação.', {
-    VeiculoID: texto, Colaborador: texto, Projeto: texto, Destino: texto, DataHoraSaida: texto, PrevisaoRetorno: texto, HodometroSaida: numero, Observacoes: texto
+    VeiculoID: texto, Colaborador: texto, Projeto: texto, DataHoraSaida: texto, PrevisaoRetorno: texto, HodometroSaida: numero, Observacoes: texto
   }, ['VeiculoID', 'Colaborador', 'DataHoraSaida'], true),
   ferramenta('iniciarRetiradaReserva', 'Marca uma reserva Agendada como retirada (Em andamento), opcionalmente atualizando o hodômetro de saída.', {
     ID: texto, HodometroSaida: numero, DataHoraSaida: texto

@@ -50,8 +50,8 @@ Esta aba é só para patrimônio de TI alocado a colaboradores. Equipamentos de 
 
 ## Aba `Reservas` (uso/reserva de veículos por período)
 
-| ID | VeiculoID | Colaborador | Projeto | Destino | DataHoraSaida | PrevisaoRetorno | DataHoraRetorno | HodometroSaida | HodometroChegada | CombustivelLitros | CombustivelCusto | Status | Observacoes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ID | VeiculoID | Colaborador | Projeto | DataHoraSaida | PrevisaoRetorno | DataHoraRetorno | HodometroSaida | HodometroChegada | CombustivelLitros | CombustivelCusto | Status | Observacoes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 - **ID**: gerado pelo sistema (ex: `RES-A1B2C3D4`), não precisa preencher na mão.
 - **VeiculoID**: código do veículo (aba `Veiculos`).

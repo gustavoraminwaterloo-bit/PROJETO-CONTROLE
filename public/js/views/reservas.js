@@ -22,7 +22,7 @@ export async function viewReservas(main) {
     const busca = estado.busca.toLowerCase();
     let lista = reservas.filter((r) => {
       const veiculo = veiculoPorId[r.VeiculoID];
-      const texto = `${r.VeiculoID} ${veiculo ? veiculo.Descricao : ''} ${r.Colaborador} ${r.Destino || ''} ${r.Projeto || ''}`.toLowerCase();
+      const texto = `${r.VeiculoID} ${veiculo ? veiculo.Descricao : ''} ${r.Colaborador} ${r.Projeto || ''}`.toLowerCase();
       return (!busca || texto.includes(busca)) && (!estado.status || r.Status === estado.status);
     });
     lista = ordenarPor(lista, estado.ordenarCampo, estado.ordenarDirecao);
@@ -77,7 +77,7 @@ export async function viewReservas(main) {
       <div class="tabela-toolbar">
         <div class="topbar-busca" style="flex:1">
           ${icons.busca}
-          <input type="search" id="filtro-busca" placeholder="veículo, colaborador, destino, projeto..." />
+          <input type="search" id="filtro-busca" placeholder="veículo, colaborador, projeto..." />
         </div>
         <select id="filtro-status"><option value="">Todos os status</option>${STATUS.map((s) => `<option>${s}</option>`).join('')}</select>
       </div>
@@ -228,9 +228,6 @@ export async function viewReservaNova(main) {
         </label>
         <label>Previsão de retorno
           <input name="PrevisaoRetorno" id="input-retorno" type="datetime-local" value="${agoraParaInputDatetime(120)}" />
-        </label>
-        <label>Destino
-          <input name="Destino" placeholder="ex: cliente, obra, campo..." />
         </label>
         <label>Projeto (opcional)
           <input name="Projeto" list="lista-projetos-reserva" />

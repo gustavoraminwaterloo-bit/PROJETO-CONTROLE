@@ -24,7 +24,7 @@ function seed() {
       { ID: 'CARRO-02', Placa: 'DEF4G56', Descricao: 'Hyundai HB20', Marca: 'Hyundai', Ano: '2023', Quilometragem: 15400, DataCompra: '2023-01-15', ValorPago: 78000, Fornecedor: 'Concessionária Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Garagem', Observacoes: 'Uso compartilhado por analistas' }
     ],
     reservas: [
-      { ID: 'RES-EX0001', VeiculoID: 'CARRO-02', Colaborador: 'Samantha Stocco', Projeto: 'P0001-EXEMPLO', Destino: 'Cliente Exemplo', DataHoraSaida: semanasA(1) + 'T08:00', PrevisaoRetorno: semanasA(1) + 'T18:00', DataHoraRetorno: '', HodometroSaida: 15400, HodometroChegada: '', CombustivelLitros: '', CombustivelCusto: '', Status: 'Agendado', Observacoes: '' }
+      { ID: 'RES-EX0001', VeiculoID: 'CARRO-02', Colaborador: 'Samantha Stocco', Projeto: 'P0001-EXEMPLO', DataHoraSaida: semanasA(1) + 'T08:00', PrevisaoRetorno: semanasA(1) + 'T18:00', DataHoraRetorno: '', HodometroSaida: 15400, HodometroChegada: '', CombustivelLitros: '', CombustivelCusto: '', Status: 'Agendado', Observacoes: '' }
     ],
     movimentacoes: [
       { ID: 'MOV-EX0001', DataHora: '2023-02-10T10:00:00', ItemID: 'NB-001', Tipo: 'Entrada-Compra', Quantidade: 1, ValorUnitario: 3200, Fornecedor: 'Fornecedor Exemplo', ProjetoDestino: '', ColaboradorEnvolvido: '', ChecadoPor: '', DataDevolucaoPrevista: '', DataDevolucaoReal: '', Observacoes: 'Registro de exemplo' },
@@ -376,7 +376,7 @@ export function mockCall(action, payload = {}) {
       }
       const registro = {
         ID: novoId('RES'), VeiculoID: payload.VeiculoID, Colaborador: payload.Colaborador, Projeto: payload.Projeto || '',
-        Destino: payload.Destino || '', DataHoraSaida: payload.DataHoraSaida, PrevisaoRetorno: payload.PrevisaoRetorno || '',
+        DataHoraSaida: payload.DataHoraSaida, PrevisaoRetorno: payload.PrevisaoRetorno || '',
         DataHoraRetorno: '', HodometroSaida: Number(payload.HodometroSaida) || 0, HodometroChegada: '', CombustivelLitros: '', CombustivelCusto: '',
         Status: new Date(payload.DataHoraSaida) <= new Date() ? 'Em andamento' : 'Agendado', Observacoes: payload.Observacoes || ''
       };

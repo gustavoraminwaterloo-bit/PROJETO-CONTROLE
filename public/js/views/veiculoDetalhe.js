@@ -22,7 +22,7 @@ function linhaReserva(r) {
 }
 
 export async function viewVeiculoDetalhe(main, { id }) {
-  const [veiculo, colaboradores, reservas] = await Promise.all([api.getVeiculo(id), api.listColaboradores(), api.listReservas(id)]);
+  const [veiculo, colaboradores, projetos, reservas] = await Promise.all([api.getVeiculo(id), api.listColaboradores(), api.listProjetos(), api.listReservas(id)]);
   const opcoesColaboradores = colaboradores.map((c) => `<option>${escapeHtml(c.Nome)}</option>`).join('');
 
   main.innerHTML = `
@@ -98,7 +98,10 @@ export async function viewVeiculoDetalhe(main, { id }) {
           </label>
           <label>Saída (data e hora) <input name="DataHoraSaida" type="datetime-local" required /></label>
           <label>Previsão de retorno <input name="PrevisaoRetorno" type="datetime-local" /></label>
-          <label>Destino / motivo <input name="Destino" /></label>
+          <label>Projeto
+            <input name="Projeto" list="lista-projetos-veiculo" placeholder="opcional" />
+            <datalist id="lista-projetos-veiculo">${projetos.map((p) => `<option value="${escapeHtml(p.Codigo)}">`).join('')}</datalist>
+          </label>
           <button type="submit">Confirmar reserva</button>
         </form>
       </details>

@@ -35,7 +35,11 @@ async function chamar(action, payload) {
     body: JSON.stringify({ action, payload })
   });
   const dados = await resposta.json().catch(() => ({ ok: false, error: 'Resposta inválida do servidor.' }));
-  if (resposta.status === 401) window.dispatchEvent(new CustomEvent('sessao-expirada'));
+  // 401 num login/loginAnalista é só "senha errada" — não uma sessão expirando.
+  // Só trata como sessão expirada quando é uma ação autenticada de verdade.
+  if (resposta.status === 401 && action !== 'login' && action !== 'loginAnalista') {
+    window.dispatchEvent(new CustomEvent('sessao-expirada'));
+  }
   return dados;
 }
 

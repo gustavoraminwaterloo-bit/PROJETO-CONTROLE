@@ -109,12 +109,12 @@ Preencha aqui os projetos a partir da lista oficial que vocês já mantêm.
 
 ## Aba `MateriaisReferencia`
 
-| ID | Identificacao | Certificador | NumeroCertificado | Lote | IncertezaMedicao | Validade | Status | ColaboradorAtual | Observacoes |
+| ID | Identificacao | Certificador | NumeroCertificado | Lote | IncertezaMedicao | Validade | Status | TecnicoResponsavel | Observacoes |
 |---|---|---|---|---|---|---|---|---|---|
 
 - **Validade**: use uma data completa (ex: `2026-12-31`), não o formato "dezembro-26" do documento
   Word atual — assim o sistema consegue calcular corretamente quantos dias faltam para vencer.
-- **ColaboradorAtual**: técnico que está com a solução no momento (segue o PT-007 — o Responsável da
+- **TecnicoResponsavel**: técnico que está com a solução no momento (segue o PT-007 — o Responsável da
   Logística entrega a solução fracionada para o técnico e precisa saber com quem cada lote está). Na
   tela **Materiais de Referência**, dá pra trocar isso a qualquer momento num campo direto na lista,
   sem precisar abrir formulário.

@@ -9,7 +9,7 @@ export async function viewMateriaisReferencia(main) {
     return `
       <select class="sel-responsavel" data-id="${escapeHtml(m.ID)}">
         <option value="">Sem responsável</option>
-        ${colaboradores.map((c) => `<option ${c.Nome === m.ColaboradorAtual ? 'selected' : ''}>${escapeHtml(c.Nome)}</option>`).join('')}
+        ${colaboradores.map((c) => `<option ${c.Nome === m.TecnicoResponsavel ? 'selected' : ''}>${escapeHtml(c.Nome)}</option>`).join('')}
       </select>
     `;
   }
@@ -31,8 +31,8 @@ export async function viewMateriaisReferencia(main) {
         <label>Status
           <select name="Status"><option>Em uso</option><option>Vencido</option><option>Descartado</option></select>
         </label>
-        <label>Responsável atual (opcional)
-          <select name="ColaboradorAtual">
+        <label>Técnico responsável (opcional)
+          <select name="TecnicoResponsavel">
             <option value="">Sem responsável — fica no almoxarifado</option>
             ${opcoesColaboradores}
           </select>
@@ -48,7 +48,7 @@ export async function viewMateriaisReferencia(main) {
       <p class="ajuda">Troque o responsável direto aqui na lista — salva sozinho, sem precisar abrir formulário.</p>
       <div class="tabela-wrap">
         <table>
-          <thead><tr><th>ID</th><th>Identificação</th><th>Certificador</th><th>Lote</th><th>Validade</th><th>Status</th><th>Responsável atual</th></tr></thead>
+          <thead><tr><th>ID</th><th>Identificação</th><th>Certificador</th><th>Lote</th><th>Validade</th><th>Status</th><th>Técnico responsável</th></tr></thead>
           <tbody>
             ${materiais.map((m) => `
               <tr>
@@ -87,7 +87,7 @@ export async function viewMateriaisReferencia(main) {
       erroEl.style.display = 'none';
       sel.disabled = true;
       try {
-        await api.atualizarResponsavelMaterialReferencia({ ID: sel.dataset.id, ColaboradorAtual: sel.value });
+        await api.atualizarResponsavelMaterialReferencia({ ID: sel.dataset.id, TecnicoResponsavel: sel.value });
       } catch (err) {
         erroEl.textContent = err.message;
         erroEl.style.display = 'block';

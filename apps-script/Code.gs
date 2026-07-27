@@ -767,21 +767,21 @@ function criarMaterialReferencia_(p) {
     IncertezaMedicao: p.IncertezaMedicao || '',
     Validade: p.Validade || '',
     Status: p.Status || 'Em uso',
-    ColaboradorAtual: p.ColaboradorAtual || '',
+    TecnicoResponsavel: p.TecnicoResponsavel || '',
     Observacoes: p.Observacoes || ''
   });
   return { ID: id };
 }
 
-// Troca só o responsável atual pela solução/material (PT-007: o Responsável da
-// Logística precisa saber sempre com qual técnico está cada lote) — ação
+// Troca só o técnico responsável pela solução/material (PT-007: o Responsável
+// da Logística precisa saber sempre com qual técnico está cada lote) — ação
 // dedicada e rápida, sem mexer no Status nem nos outros campos.
 function atualizarResponsavelMaterialReferencia_(p) {
   if (!p.ID) throw new Error('Informe o material de referência.');
   var sheet = getSheet_('MateriaisReferencia');
   if (findRowIndexById_(sheet, 'ID', p.ID) === -1) throw new Error('Material de referência não encontrado: ' + p.ID);
-  updateRowById_(sheet, 'ID', p.ID, { ColaboradorAtual: p.ColaboradorAtual || '' });
-  return { ID: p.ID, ColaboradorAtual: p.ColaboradorAtual || '' };
+  updateRowById_(sheet, 'ID', p.ID, { TecnicoResponsavel: p.TecnicoResponsavel || '' });
+  return { ID: p.ID, TecnicoResponsavel: p.TecnicoResponsavel || '' };
 }
 
 // ---------------------------------------------------------------------------

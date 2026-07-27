@@ -81,10 +81,10 @@ const FERRAMENTAS = [
   }, ['Codigo'], true),
   ferramenta('criarMaterialReferencia', 'Cadastra um novo material de referência de laboratório.', {
     ID: texto, Identificacao: texto, Certificador: texto, NumeroCertificado: texto, Lote: texto, IncertezaMedicao: texto,
-    Validade: texto, Status: texto, ColaboradorAtual: texto, Observacoes: texto
+    Validade: texto, Status: texto, TecnicoResponsavel: texto, Observacoes: texto
   }, ['Identificacao'], true),
   ferramenta('atualizarResponsavelMaterialReferencia', 'Troca qual técnico está com um material de referência/solução no momento (sem mudar status ou outros campos) — use quando o usuário disser algo como "a solução de pH agora está com o Fernando".', {
-    ID: texto, ColaboradorAtual: texto
+    ID: texto, TecnicoResponsavel: texto
   }, ['ID'], true),
   ferramenta('importarLote', 'Cadastra várias linhas de uma vez (importação em lote) numa das abas — use quando o usuário colar ou enviar dados de uma planilha com várias linhas, em vez de chamar a ferramenta de criar uma por uma. Cada linha deve ter os mesmos campos da ferramenta de criar daquela aba (ex: para "Itens", cada linha tem ID, Categoria, Descricao etc.).', {
     aba: { type: 'string', enum: ['Itens', 'Equipamentos', 'Veiculos', 'Colaboradores', 'Projetos', 'MateriaisReferencia'] },

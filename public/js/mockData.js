@@ -440,7 +440,7 @@ export function mockCall(action, payload = {}) {
       db.materiaisReferencia.push({
         ID: id, Identificacao: payload.Identificacao, Certificador: payload.Certificador || '', NumeroCertificado: payload.NumeroCertificado || '',
         Lote: payload.Lote || '', IncertezaMedicao: payload.IncertezaMedicao || '', Validade: payload.Validade || '',
-        Status: payload.Status || 'Em uso', ColaboradorAtual: payload.ColaboradorAtual || '', Observacoes: payload.Observacoes || ''
+        Status: payload.Status || 'Em uso', TecnicoResponsavel: payload.TecnicoResponsavel || '', Observacoes: payload.Observacoes || ''
       });
       resultado = { ID: id };
       break;
@@ -448,8 +448,8 @@ export function mockCall(action, payload = {}) {
     case 'atualizarResponsavelMaterialReferencia': {
       const material = db.materiaisReferencia.find((m) => String(m.ID) === String(payload.ID));
       if (!material) throw new Error('Material de referência não encontrado: ' + payload.ID);
-      material.ColaboradorAtual = payload.ColaboradorAtual || '';
-      resultado = { ID: material.ID, ColaboradorAtual: material.ColaboradorAtual };
+      material.TecnicoResponsavel = payload.TecnicoResponsavel || '';
+      resultado = { ID: material.ID, TecnicoResponsavel: material.TecnicoResponsavel };
       break;
     }
     default:

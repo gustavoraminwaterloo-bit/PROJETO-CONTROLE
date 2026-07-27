@@ -218,6 +218,10 @@ function routeWrite_(action, payload) {
       return desativarUsuario_(payload);
     case 'atualizarResponsavelMaterialReferencia':
       return atualizarResponsavelMaterialReferencia_(payload);
+    case 'editarMaterialReferencia':
+      return editarMaterialReferencia_(payload);
+    case 'removerMaterialReferencia':
+      return removerMaterialReferencia_(payload);
     case 'atualizarContratoVeiculo':
       return atualizarContratoVeiculo_(payload);
     default:
@@ -773,6 +777,12 @@ function criarMaterialReferencia_(p) {
   return { ID: id };
 }
 
+function getMaterialReferencia_(id) {
+  var m = sheetToObjects_(getSheet_('MateriaisReferencia')).filter(function (x) { return String(x.ID) === String(id); })[0];
+  if (!m) throw new Error('Material de referência não encontrado: ' + id);
+  return m;
+}
+
 // Troca só o técnico responsável pela solução/material (PT-007: o Responsável
 // da Logística precisa saber sempre com qual técnico está cada lote) — ação
 // dedicada e rápida, sem mexer no Status nem nos outros campos.
@@ -782,6 +792,26 @@ function atualizarResponsavelMaterialReferencia_(p) {
   if (findRowIndexById_(sheet, 'ID', p.ID) === -1) throw new Error('Material de referência não encontrado: ' + p.ID);
   updateRowById_(sheet, 'ID', p.ID, { TecnicoResponsavel: p.TecnicoResponsavel || '' });
   return { ID: p.ID, TecnicoResponsavel: p.TecnicoResponsavel || '' };
+}
+
+// Edição geral do material de referência — atualiza só os campos informados
+// no payload (mesmo padrão de updateRowById_ usado no resto do sistema).
+function editarMaterialReferencia_(p) {
+  if (!p.ID) throw new Error('Informe o material de referência.');
+  var sheet = getSheet_('MateriaisReferencia');
+  if (findRowIndexById_(sheet, 'ID', p.ID) === -1) throw new Error('Material de referência não encontrado: ' + p.ID);
+  updateRowById_(sheet, 'ID', p.ID, p);
+  return getMaterialReferencia_(p.ID);
+}
+
+// Remoção suave — mantém a linha (com lote/certificado) na planilha para
+// histórico, só marca o Status como 'Removido' em vez de apagar.
+function removerMaterialReferencia_(p) {
+  if (!p.ID) throw new Error('Informe o material de referência.');
+  var sheet = getSheet_('MateriaisReferencia');
+  if (findRowIndexById_(sheet, 'ID', p.ID) === -1) throw new Error('Material de referência não encontrado: ' + p.ID);
+  updateRowById_(sheet, 'ID', p.ID, { Status: 'Removido' });
+  return { ID: p.ID, Status: 'Removido' };
 }
 
 // ---------------------------------------------------------------------------

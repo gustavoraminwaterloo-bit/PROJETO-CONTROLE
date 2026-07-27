@@ -86,6 +86,13 @@ const FERRAMENTAS = [
   ferramenta('atualizarResponsavelMaterialReferencia', 'Troca qual técnico está com um material de referência/solução no momento (sem mudar status ou outros campos) — use quando o usuário disser algo como "a solução de pH agora está com o Fernando".', {
     ID: texto, TecnicoResponsavel: texto
   }, ['ID'], true),
+  ferramenta('editarMaterialReferencia', 'Edita um ou mais campos de um material de referência já cadastrado (ex: corrigir lote, validade, certificador).', {
+    ID: texto, Identificacao: texto, Certificador: texto, NumeroCertificado: texto, Lote: texto, IncertezaMedicao: texto,
+    Validade: texto, Status: texto, TecnicoResponsavel: texto, Observacoes: texto
+  }, ['ID'], true),
+  ferramenta('removerMaterialReferencia', 'Remove (de forma suave, sem apagar o histórico) um material de referência — marca o Status como "Removido".', {
+    ID: texto
+  }, ['ID'], true),
   ferramenta('importarLote', 'Cadastra várias linhas de uma vez (importação em lote) numa das abas — use quando o usuário colar ou enviar dados de uma planilha com várias linhas, em vez de chamar a ferramenta de criar uma por uma. Cada linha deve ter os mesmos campos da ferramenta de criar daquela aba (ex: para "Itens", cada linha tem ID, Categoria, Descricao etc.).', {
     aba: { type: 'string', enum: ['Itens', 'Equipamentos', 'Veiculos', 'Colaboradores', 'Projetos', 'MateriaisReferencia'] },
     linhas: { type: 'array', items: { type: 'object' } }

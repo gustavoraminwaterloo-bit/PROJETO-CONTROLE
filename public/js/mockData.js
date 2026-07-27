@@ -452,6 +452,20 @@ export function mockCall(action, payload = {}) {
       resultado = { ID: material.ID, TecnicoResponsavel: material.TecnicoResponsavel };
       break;
     }
+    case 'editarMaterialReferencia': {
+      const material = db.materiaisReferencia.find((m) => String(m.ID) === String(payload.ID));
+      if (!material) throw new Error('Material de referência não encontrado: ' + payload.ID);
+      Object.assign(material, payload);
+      resultado = material;
+      break;
+    }
+    case 'removerMaterialReferencia': {
+      const material = db.materiaisReferencia.find((m) => String(m.ID) === String(payload.ID));
+      if (!material) throw new Error('Material de referência não encontrado: ' + payload.ID);
+      material.Status = 'Removido';
+      resultado = { ID: material.ID, Status: 'Removido' };
+      break;
+    }
     default:
       throw new Error('Ação desconhecida (mock): ' + action);
   }

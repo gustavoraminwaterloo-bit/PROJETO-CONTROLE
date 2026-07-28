@@ -848,7 +848,7 @@ function avisos_(diasAntecedencia) {
     .filter(function (a) { return a.diasRestantes !== null && a.diasRestantes <= diasAntecedencia; });
 
   var validades = sheetToObjects_(getSheet_('MateriaisReferencia'))
-    .filter(function (m) { return m.Validade && m.Status !== 'Descartado'; })
+    .filter(function (m) { return m.Validade && m.Status !== 'Descartado' && m.Status !== 'Removido'; })
     .map(function (m) {
       return { tipo: 'Validade material de referência', id: m.ID, descricao: m.Identificacao, data: m.Validade, diasRestantes: diasAte_(m.Validade) };
     })

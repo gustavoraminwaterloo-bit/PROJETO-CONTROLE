@@ -24,25 +24,39 @@ export function formatarMoeda(valor) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// Uma data "só dia" (YYYY-MM-DD, formato que vem da planilha em Validade,
+// ProximaCalibracao, VencimentoContrato etc.) o JavaScript interpreta como UTC.
+// Em fuso negativo — Brasil é UTC-3 — isso exibia sempre o DIA ANTERIOR
+// (validade 09/09 aparecia como 08/09, e o cálculo de "vence em X dias"
+// errava por um dia). Forçar T00:00:00 faz ler como meia-noite local, que é o
+// sentido correto de um vencimento: dia civil, sem hora.
+export function paraData(valor) {
+  if (valor instanceof Date) return valor;
+  const texto = String(valor);
+  return /^\d{4}-\d{2}-\d{2}$/.test(texto) ? new Date(`${texto}T00:00:00`) : new Date(texto);
+}
+
 export function formatarData(valor) {
   if (!valor) return '-';
-  const d = new Date(valor);
+  const d = paraData(valor);
   if (isNaN(d.getTime())) return String(valor);
   return d.toLocaleDateString('pt-BR');
 }
 
 export function formatarDataHora(valor) {
   if (!valor) return '-';
-  const d = new Date(valor);
+  const d = paraData(valor);
   if (isNaN(d.getTime())) return String(valor);
   return d.toLocaleString('pt-BR');
 }
 
 export function paraInputData(valor) {
   if (!valor) return '';
-  const d = new Date(valor);
+  const d = paraData(valor);
   if (isNaN(d.getTime())) return '';
-  return d.toISOString().slice(0, 10);
+  // Data local, não toISOString() (que converte pra UTC e podia voltar um dia
+  // — o campo abria com a data errada e regravava errado ao salvar).
+  return diaISO(d);
 }
 
 export function escapeHtml(str) {
@@ -59,14 +73,11 @@ export function classeBadgeStatus(status) {
     'Em locação': 'projeto',
     'Em manutenção': 'manutencao',
     'Fora de uso': 'fora',
-    'Agendado': 'colaborador',
-    'Em andamento': 'projeto',
-    'Concluído': 'estoque',
-    'Cancelado': 'fora',
     'Em uso': 'estoque',
     'Vencido': 'fora',
     'Descartado': 'fora',
-    'Removido': 'fora'
+    'Removido': 'fora',
+    'Substituído': 'manutencao'
   };
   return mapa[status] || '';
 }
@@ -85,9 +96,15 @@ export function serializarFormulario(form) {
   return dados;
 }
 
+// Dia (YYYY-MM-DD) no fuso local. Antes usava toISOString(), que converte pra
+// UTC: no Brasil (UTC-3) qualquer movimentação lançada depois das 21h caía no
+// dia seguinte, e "Entradas hoje" no Painel contava errado à noite.
 export function diaISO(data) {
-  const d = data ? new Date(data) : new Date();
-  return d.toISOString().slice(0, 10);
+  const d = data ? paraData(data) : new Date();
+  if (isNaN(d.getTime())) return '';
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mes}-${dia}`;
 }
 
 export function iniciaisNome(nome) {

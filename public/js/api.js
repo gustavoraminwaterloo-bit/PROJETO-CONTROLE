@@ -1,4 +1,4 @@
-import { mockCall, encontrarUsuarioDemo } from './mockData.js';
+import { mockCall } from './mockData.js';
 
 // Modo de demonstração: liga automaticamente quando o site é aberto como
 // arquivo local (sem servidor) ou quando o usuário força com ?mock=1.
@@ -13,11 +13,6 @@ async function chamar(action, payload) {
   if (MODO_DEMO) {
     if (action === 'login') {
       return payload && payload.senha ? { ok: true, papel: 'admin', nome: 'Administrador' } : { ok: false, error: 'Digite uma senha.' };
-    }
-    if (action === 'loginAnalista') {
-      if (!(payload && payload.usuario && payload.senha)) return { ok: false, error: 'Informe usuário e senha.' };
-      const usuario = encontrarUsuarioDemo(payload.usuario);
-      return { ok: true, papel: 'analista', nome: usuario ? usuario.Nome : payload.usuario };
     }
     if (action === 'logout') {
       return { ok: true };
@@ -35,9 +30,9 @@ async function chamar(action, payload) {
     body: JSON.stringify({ action, payload })
   });
   const dados = await resposta.json().catch(() => ({ ok: false, error: 'Resposta inválida do servidor.' }));
-  // 401 num login/loginAnalista é só "senha errada" — não uma sessão expirando.
-  // Só trata como sessão expirada quando é uma ação autenticada de verdade.
-  if (resposta.status === 401 && action !== 'login' && action !== 'loginAnalista') {
+  // 401 no login é só "senha errada" — não uma sessão expirando. Só trata como
+  // sessão expirada quando é uma ação autenticada de verdade.
+  if (resposta.status === 401 && action !== 'login') {
     window.dispatchEvent(new CustomEvent('sessao-expirada'));
   }
   return dados;
@@ -71,7 +66,6 @@ async function chamarAssistente(corpo) {
 
 export const api = {
   login: (senha) => chamar('login', { senha }),
-  loginAnalista: (usuario, senha) => chamar('loginAnalista', { usuario, senha }),
   logout: () => chamar('logout', {}),
 
   listItens: () => chamarOuFalhar('listItens'),
@@ -86,11 +80,6 @@ export const api = {
   custoPorProjeto: (projeto) => chamarOuFalhar('custoPorProjeto', { projeto }),
   listMateriaisReferencia: () => chamarOuFalhar('listMateriaisReferencia'),
   avisos: (dias) => chamarOuFalhar('avisos', { dias }),
-  listReservas: (veiculoId, colaborador, status) => chamarOuFalhar('listReservas', { veiculoId, colaborador, status }),
-  getReserva: (id) => chamarOuFalhar('getReserva', { id }),
-  verificarDisponibilidade: (veiculoId, inicio, fim) => chamarOuFalhar('verificarDisponibilidade', { veiculoId, inicio, fim }),
-  responsavelNaData: (veiculoId, data) => chamarOuFalhar('responsavelNaData', { veiculoId, data }),
-  listUsuarios: () => chamarOuFalhar('listUsuarios'),
 
   criarItem: (payload) => chamarOuFalhar('criarItem', payload),
   registrarEntrada: (payload) => chamarOuFalhar('registrarEntrada', payload),
@@ -98,6 +87,7 @@ export const api = {
   registrarSaidaProjeto: (payload) => chamarOuFalhar('registrarSaidaProjeto', payload),
   registrarDevolucao: (payload) => chamarOuFalhar('registrarDevolucao', payload),
   criarEquipamento: (payload) => chamarOuFalhar('criarEquipamento', payload),
+  editarEquipamento: (payload) => chamarOuFalhar('editarEquipamento', payload),
   registrarLocacao: (payload) => chamarOuFalhar('registrarLocacao', payload),
   registrarDevolucaoEquipamento: (payload) => chamarOuFalhar('registrarDevolucaoEquipamento', payload),
   registrarCalibracaoEquipamento: (payload) => chamarOuFalhar('registrarCalibracaoEquipamento', payload),
@@ -107,14 +97,9 @@ export const api = {
   criarMaterialReferencia: (payload) => chamarOuFalhar('criarMaterialReferencia', payload),
   atualizarResponsavelMaterialReferencia: (payload) => chamarOuFalhar('atualizarResponsavelMaterialReferencia', payload),
   editarMaterialReferencia: (payload) => chamarOuFalhar('editarMaterialReferencia', payload),
+  duplicarMaterialReferencia: (payload) => chamarOuFalhar('duplicarMaterialReferencia', payload),
   removerMaterialReferencia: (payload) => chamarOuFalhar('removerMaterialReferencia', payload),
   atualizarContratoVeiculo: (payload) => chamarOuFalhar('atualizarContratoVeiculo', payload),
-  criarReserva: (payload) => chamarOuFalhar('criarReserva', payload),
-  iniciarRetiradaReserva: (payload) => chamarOuFalhar('iniciarRetiradaReserva', payload),
-  registrarRetornoReserva: (payload) => chamarOuFalhar('registrarRetornoReserva', payload),
-  cancelarReserva: (payload) => chamarOuFalhar('cancelarReserva', payload),
-  criarUsuario: (payload) => chamarOuFalhar('criarUsuario', payload),
-  desativarUsuario: (payload) => chamarOuFalhar('desativarUsuario', payload),
 
   assistente: (corpo) => chamarAssistente(corpo)
 };

@@ -1,6 +1,11 @@
 # Planilha modelo (Google Sheets)
 
-Crie uma planilha nova no Google Sheets com exatamente estas 9 abas. Os nomes das abas e das colunas
+> **Nota:** as abas `Reservas` (reserva de veículo por período) e `Usuarios` (login individual de
+> analista) **não são mais usadas** pelo sistema — a reserva de frota é feita em outro sistema, e o
+> acesso aqui é só de administrador (senha única `ADMIN_PASSWORD` no Netlify). Se essas abas já
+> existem na sua planilha, pode deixá-las lá como histórico: o sistema simplesmente não as lê mais.
+
+Crie uma planilha nova no Google Sheets com exatamente estas 7 abas. Os nomes das abas e das colunas
 precisam ser digitados **exatamente assim** (maiúsculas/minúsculas e acentos importam), porque o
 Apps Script (`apps-script/Code.gs`) lê e escreve usando esses nomes.
 
@@ -48,43 +53,6 @@ Esta aba é só para patrimônio de TI alocado a colaboradores. Equipamentos de 
 - Alocação e devolução de veículo funcionam igual à de `Itens` (alocação fixa a um colaborador,
   normalmente um técnico) — usa as mesmas ações do sistema, só que na tela "Veículos".
 
-## Aba `Reservas` (uso/reserva de veículos por período)
-
-| ID | VeiculoID | Colaborador | Projeto | DataHoraSaida | PrevisaoRetorno | DataHoraRetorno | HodometroSaida | HodometroChegada | CombustivelLitros | CombustivelCusto | Status | Observacoes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-
-- **ID**: gerado pelo sistema (ex: `RES-A1B2C3D4`), não precisa preencher na mão.
-- **VeiculoID**: código do veículo (aba `Veiculos`).
-- **Colaborador**: quem está usando o veículo nesse período (pode ser diferente do
-  `ColaboradorAtual` fixo do veículo — ver abaixo).
-- **Status**: `Agendado` (reserva futura, ainda não retirou) / `Em andamento` (já retirou, ainda não
-  devolveu) / `Concluído` / `Cancelado`.
-- Esta aba serve tanto para veículos de uso compartilhado (ex: um HB20 que qualquer analista pode
-  reservar por data/hora) quanto para um **empréstimo temporário de um veículo normalmente fixo** a um
-  técnico (ex: a Fiorino do Rubens emprestada ao Fernando por alguns dias). Nesse segundo caso, o
-  `ColaboradorAtual` do veículo na aba `Veiculos` **não muda** — ele continua sendo o responsável
-  padrão; a linha em `Reservas` é que registra quem esteve com o carro naquele intervalo exato de
-  datas. Isso permite consultar depois, por data, quem estava de fato com qual veículo (útil por
-  exemplo pra apurar responsabilidade em multa de trânsito): se existir uma Reserva cobrindo aquele
-  veículo+data, o responsável é o `Colaborador` dela; senão, é o `ColaboradorAtual` padrão do veículo.
-- Ao registrar o retorno, preencha `DataHoraRetorno`, `HodometroChegada`, `CombustivelLitros` (se
-  abasteceu) e `CombustivelCusto` — o sistema também atualiza a `Quilometragem` do veículo.
-
-## Aba `Usuarios` (login individual dos analistas)
-
-| Nome | Usuario | SenhaHash | Papel | Status |
-|---|---|---|---|---|
-
-- Esta aba guarda só os logins de **analistas** (acesso reduzido, só à reserva de veículos). O login
-  de administrador continua sendo a senha única `ADMIN_PASSWORD` configurada no Netlify — não entra
-  nesta aba.
-- **SenhaHash**: nunca digite a senha em texto puro aqui. As linhas desta aba são criadas pela tela
-  "Usuários" do site (menu do administrador), que já converte a senha num hash antes de gravar — a
-  senha em texto puro nunca é salva na planilha.
-- **Papel**: sempre `analista` nesta aba.
-- **Status**: `Ativo` / `Inativo` (desativar em vez de apagar a linha, para manter o histórico de quem
-  fez cada reserva).
-
 ## Aba `Movimentacoes`
 
 | ID | DataHora | ItemID | Tipo | Quantidade | ValorUnitario | Fornecedor | ProjetoDestino | ColaboradorEnvolvido | ChecadoPor | DataDevolucaoPrevista | DataDevolucaoReal | Observacoes |
@@ -114,10 +82,13 @@ Preencha aqui os projetos a partir da lista oficial que vocês já mantêm.
 
 - **Validade**: use uma data completa (ex: `2026-12-31`), não o formato "dezembro-26" do documento
   Word atual — assim o sistema consegue calcular corretamente quantos dias faltam para vencer.
-- **TecnicoResponsavel**: técnico que está com a solução no momento (segue o PT-007 — o Responsável da
-  Logística entrega a solução fracionada para o técnico e precisa saber com quem cada lote está). Na
-  tela **Materiais de Referência**, dá pra trocar isso a qualquer momento num campo direto na lista,
-  sem precisar abrir formulário.
+- **TecnicoResponsavel**: técnico(s) que estão com a solução no momento (segue o PT-007 — o Responsável
+  da Logística entrega a solução fracionada para os técnicos e precisa saber com quem cada lote está).
+  Como um mesmo lote costuma ser fracionado entre vários técnicos, este campo aceita **vários nomes
+  separados por vírgula** (ex: `Fernando Luna, Samantha Stocco`) — assim um lote continua sendo **uma
+  única linha**, em vez de linhas repetidas com o mesmo lote/certificado. Na tela **Materiais de
+  Referência** o lote aparece no card de cada técnico da lista (indicando com quem está compartilhado),
+  e a edição é por caixas de seleção — clique duas vezes na linha para abrir.
 
 ## Depois de criar a planilha
 

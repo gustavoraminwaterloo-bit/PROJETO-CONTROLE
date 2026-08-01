@@ -78,15 +78,10 @@ function sessaoValida(event) {
 
 // Igual a sessaoValida, mas devolve o conteúdo da sessão (papel, nome) em vez
 // de só um booleano — usado onde a ação depende de quem está logado (ex:
-// restringir as ações do analista, ou saber o nome pra mostrar na tela).
+// saber o nome pra mostrar na tela).
 function sessaoPayload(event) {
   const cookies = parseCookies(event.headers.cookie);
   return verify(cookies[COOKIE_NAME]);
-}
-
-function hashSenha(senha) {
-  const secret = requireEnv('SESSION_SECRET');
-  return crypto.createHmac('sha256', secret).update(senha || '').digest('hex');
 }
 
 async function chamarAppsScript(action, payload) {
@@ -101,5 +96,5 @@ async function chamarAppsScript(action, payload) {
 }
 
 module.exports = {
-  COOKIE_NAME, requireEnv, sign, verify, parseCookies, setCookieHeader, json, sessaoValida, sessaoPayload, hashSenha, chamarAppsScript
+  COOKIE_NAME, requireEnv, sign, verify, parseCookies, setCookieHeader, json, sessaoValida, sessaoPayload, chamarAppsScript
 };

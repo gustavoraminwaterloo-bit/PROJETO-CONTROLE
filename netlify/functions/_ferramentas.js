@@ -29,10 +29,6 @@ const FERRAMENTAS = [
   ferramenta('listMovimentacoes', 'Lista o histórico de movimentações (entradas, saídas, locações, devoluções, calibrações). Se informar itemId, filtra só as movimentações daquele item/equipamento/veículo.', { itemId: texto }),
   ferramenta('custoPorProjeto', 'Calcula o custo acumulado de um projeto (ou de todos os projetos, se não informar nenhum) somando as movimentações vinculadas a ele.', { projeto: texto }),
   ferramenta('avisos', 'Lista os avisos de calibração de equipamentos e validade de materiais de referência vencendo dentro de N dias (padrão 60).', { dias: numero }),
-  ferramenta('listReservas', 'Lista reservas/usos de veículos (agendamentos futuros, retiradas em andamento, concluídas ou canceladas). Pode filtrar por veiculoId, colaborador ou status (Agendado, Em andamento, Concluído, Cancelado).', { veiculoId: texto, colaborador: texto, status: texto }),
-  ferramenta('getReserva', 'Busca uma reserva específica pelo código (ID).', { id: texto }, ['id']),
-  ferramenta('verificarDisponibilidade', 'Verifica se um veículo está disponível num período (data/hora de início e fim) — usa antes de propor uma nova reserva.', { veiculoId: texto, inicio: texto, fim: texto }, ['veiculoId', 'inicio']),
-  ferramenta('responsavelNaData', 'Descobre quem estava de fato com um veículo numa data específica — considera reservas/empréstimos pontuais registrados naquele período; se não houver nenhum, devolve o responsável fixo (técnico) do veículo. Útil para apurar responsabilidade em multa de trânsito.', { veiculoId: texto, data: texto }, ['veiculoId', 'data']),
 
   // --- Escrita (sempre pedem confirmação do usuário antes de executar) --
   ferramenta('criarItem', 'Cadastra um novo item de patrimônio de TI.', {
@@ -83,7 +79,7 @@ const FERRAMENTAS = [
     ID: texto, Identificacao: texto, Certificador: texto, NumeroCertificado: texto, Lote: texto, IncertezaMedicao: texto,
     Validade: texto, Status: texto, TecnicoResponsavel: texto, Observacoes: texto
   }, ['Identificacao'], true),
-  ferramenta('atualizarResponsavelMaterialReferencia', 'Troca qual técnico está com um material de referência/solução no momento (sem mudar status ou outros campos) — use quando o usuário disser algo como "a solução de pH agora está com o Fernando".', {
+  ferramenta('atualizarResponsavelMaterialReferencia', 'Troca quais técnicos estão com um material de referência/solução no momento (sem mudar status ou outros campos) — use quando o usuário disser algo como "a solução de pH agora está com o Fernando". Um mesmo lote pode estar fracionado entre vários técnicos: passe todos separados por vírgula (ex: "Fernando Luna, Samantha Stocco"). Atenção: substitui a lista inteira, não acrescenta — para adicionar alguém, inclua também quem já estava.', {
     ID: texto, TecnicoResponsavel: texto
   }, ['ID'], true),
   ferramenta('editarMaterialReferencia', 'Edita um ou mais campos de um material de referência já cadastrado (ex: corrigir lote, validade, certificador).', {
@@ -96,19 +92,7 @@ const FERRAMENTAS = [
   ferramenta('importarLote', 'Cadastra várias linhas de uma vez (importação em lote) numa das abas — use quando o usuário colar ou enviar dados de uma planilha com várias linhas, em vez de chamar a ferramenta de criar uma por uma. Cada linha deve ter os mesmos campos da ferramenta de criar daquela aba (ex: para "Itens", cada linha tem ID, Categoria, Descricao etc.).', {
     aba: { type: 'string', enum: ['Itens', 'Equipamentos', 'Veiculos', 'Colaboradores', 'Projetos', 'MateriaisReferencia'] },
     linhas: { type: 'array', items: { type: 'object' } }
-  }, ['aba', 'linhas'], true),
-  ferramenta('criarReserva', 'Cria uma reserva de veículo — agendamento futuro (se a saída for numa data futura) ou retirada imediata (se a saída for agora). Verifique a disponibilidade antes de propor esta ação.', {
-    VeiculoID: texto, Colaborador: texto, Projeto: texto, DataHoraSaida: texto, PrevisaoRetorno: texto, HodometroSaida: numero, Observacoes: texto
-  }, ['VeiculoID', 'Colaborador', 'DataHoraSaida'], true),
-  ferramenta('iniciarRetiradaReserva', 'Marca uma reserva Agendada como retirada (Em andamento), opcionalmente atualizando o hodômetro de saída.', {
-    ID: texto, HodometroSaida: numero, DataHoraSaida: texto
-  }, ['ID'], true),
-  ferramenta('registrarRetornoReserva', 'Registra o retorno/devolução de uma reserva de veículo, com hodômetro de chegada e combustível abastecido.', {
-    ID: texto, HodometroChegada: numero, CombustivelLitros: numero, CombustivelCusto: numero, Observacoes: texto
-  }, ['ID', 'HodometroChegada'], true),
-  ferramenta('cancelarReserva', 'Cancela uma reserva de veículo que ainda não foi concluída.', {
-    ID: texto, Observacoes: texto
-  }, ['ID'], true)
+  }, ['aba', 'linhas'], true)
 ];
 
 function paraLLM() {

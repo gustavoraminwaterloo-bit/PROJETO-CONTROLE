@@ -1,28 +1,12 @@
 import { api } from '../api.js';
-import { escapeHtml, formatarMoeda, formatarDataHora, ordenarPor, paginar, classeBadgeStatus } from '../util.js';
+import { escapeHtml, formatarMoeda, ordenarPor, paginar, classeBadgeStatus } from '../util.js';
 import { icons } from '../icons.js';
 
 const STATUS = ['Em estoque', 'Com colaborador', 'Em manutenção', 'Fora de uso'];
 const POR_PAGINA = 10;
 
-function disponibilidadeHoje(veiculoId, reservas) {
-  const agora = new Date();
-  const doVeiculo = reservas.filter((r) => r.VeiculoID === veiculoId && (r.Status === 'Agendado' || r.Status === 'Em andamento'));
-  const emAndamento = doVeiculo.find((r) => r.Status === 'Em andamento');
-  if (emAndamento) {
-    return { texto: `Em uso (${escapeHtml(emAndamento.Colaborador)})`, classe: 'projeto' };
-  }
-  const proximaAgendada = doVeiculo
-    .filter((r) => r.Status === 'Agendado' && new Date(r.DataHoraSaida) >= agora)
-    .sort((a, b) => new Date(a.DataHoraSaida) - new Date(b.DataHoraSaida))[0];
-  if (proximaAgendada && new Date(proximaAgendada.DataHoraSaida) - agora < 24 * 60 * 60 * 1000) {
-    return { texto: `Reservado a partir de ${formatarDataHora(proximaAgendada.DataHoraSaida)}`, classe: 'colaborador' };
-  }
-  return { texto: 'Disponível', classe: 'estoque' };
-}
-
 export async function viewVeiculos(main) {
-  const [veiculos, reservas] = await Promise.all([api.listVeiculos(), api.listReservas()]);
+  const veiculos = await api.listVeiculos();
 
   let estado = { busca: '', status: '', ordenarCampo: 'ID', ordenarDirecao: 'asc', pagina: 1 };
 
@@ -32,8 +16,7 @@ export async function viewVeiculos(main) {
     { campo: 'Descricao', rotulo: 'Modelo' },
     { campo: 'Status', rotulo: 'Status' },
     { campo: 'ColaboradorAtual', rotulo: 'Responsável' },
-    { campo: 'Quilometragem', rotulo: 'Quilometragem' },
-    { campo: null, rotulo: 'Disponibilidade hoje' }
+    { campo: 'Quilometragem', rotulo: 'Quilometragem' }
   ];
 
   function filtrarOrdenar() {
@@ -47,7 +30,6 @@ export async function viewVeiculos(main) {
   }
 
   function linhaHtml(v) {
-    const disponibilidade = disponibilidadeHoje(v.ID, reservas);
     return `
       <tr>
         <td><a href="#/veiculo/${encodeURIComponent(v.ID)}">${escapeHtml(v.ID)}</a></td>
@@ -56,7 +38,6 @@ export async function viewVeiculos(main) {
         <td><span class="badge ${classeBadgeStatus(v.Status)}">${escapeHtml(v.Status)}</span></td>
         <td>${escapeHtml(v.ColaboradorAtual || '-')}</td>
         <td>${v.Quilometragem ? Number(v.Quilometragem).toLocaleString('pt-BR') + ' km' : '-'}</td>
-        <td><span class="badge ${disponibilidade.classe}">${disponibilidade.texto}</span></td>
       </tr>
     `;
   }
@@ -67,7 +48,7 @@ export async function viewVeiculos(main) {
     estado.pagina = paginaAtual;
 
     const corpo = main.querySelector('#corpo-tabela');
-    corpo.innerHTML = pagina.length ? pagina.map(linhaHtml).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted)">Nenhum veículo encontrado.</td></tr>';
+    corpo.innerHTML = pagina.length ? pagina.map(linhaHtml).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted)">Nenhum veículo encontrado.</td></tr>';
 
     main.querySelectorAll('th.ordenavel').forEach((th) => {
       const campo = th.dataset.campo;

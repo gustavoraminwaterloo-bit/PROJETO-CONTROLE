@@ -1,8 +1,38 @@
 import { api } from '../api.js';
-import { escapeHtml, formatarData, formatarMoeda, ordenarPor, paginar, classeBadgeStatus } from '../util.js';
+import { escapeHtml, formatarData, formatarMoeda, ordenarPor, paginar, classeBadgeStatus, abrirModal, fecharModal, paraData } from '../util.js';
 import { icons } from '../icons.js';
 
 const STATUS = ['Em estoque', 'Em locação', 'Em manutenção', 'Fora de uso'];
+
+// Campos do cadastro que podem ser corrigidos depois de criado. Ficam de fora
+// Status e ColaboradorAtual — esses continuam só pelas ações de locação/devolução,
+// que já registram o histórico certo (evita um jeito "por trás" de mudar quem
+// está com o equipamento sem passar pelo fluxo de locação).
+function camposEdicaoEquipamento(e = {}) {
+  return `
+    <label>Código <input value="${escapeHtml(e.ID || '')}" disabled /></label>
+    <div class="grid cols-2">
+      <label>Descrição <input name="Descricao" value="${escapeHtml(e.Descricao || '')}" /></label>
+      <label>Modelo <input name="Modelo" value="${escapeHtml(e.Modelo || '')}" /></label>
+    </div>
+    <div class="grid cols-2">
+      <label>Marca <input name="Marca" value="${escapeHtml(e.Marca || '')}" /></label>
+      <label>Nº de série <input name="NumeroSerie" value="${escapeHtml(e.NumeroSerie || '')}" /></label>
+    </div>
+    <label>Local de armazenamento <input name="LocalArmazenamento" value="${escapeHtml(e.LocalArmazenamento || '')}" /></label>
+    <div class="grid cols-2">
+      <label>Valor pago <input name="ValorPago" type="number" step="0.01" value="${escapeHtml(e.ValorPago || '')}" /></label>
+      <label>Fornecedor <input name="Fornecedor" value="${escapeHtml(e.Fornecedor || '')}" /></label>
+    </div>
+    <label>Data da compra <input name="DataCompra" type="date" value="${e.DataCompra ? escapeHtml(String(e.DataCompra).slice(0, 10)) : ''}" /></label>
+    <div class="grid cols-2">
+      <label>Última calibração <input name="UltimaCalibracao" type="date" value="${e.UltimaCalibracao ? escapeHtml(String(e.UltimaCalibracao).slice(0, 10)) : ''}" /></label>
+      <label>Próxima calibração <input name="ProximaCalibracao" type="date" value="${e.ProximaCalibracao ? escapeHtml(String(e.ProximaCalibracao).slice(0, 10)) : ''}" /></label>
+    </div>
+    <label>Nº do certificado de calibração <input name="NumeroCertificadoCalibracao" value="${escapeHtml(e.NumeroCertificadoCalibracao || '')}" /></label>
+    <label>Observações <textarea name="Observacoes">${escapeHtml(e.Observacoes || '')}</textarea></label>
+  `;
+}
 const POR_PAGINA = 10;
 
 function classeCalibracao(dias) {
@@ -14,7 +44,7 @@ function classeCalibracao(dias) {
 
 function diasAte(dataStr) {
   if (!dataStr) return null;
-  const data = new Date(dataStr);
+  const data = paraData(dataStr);
   if (isNaN(data.getTime())) return null;
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -33,7 +63,8 @@ export async function viewEquipamentos(main) {
     { campo: 'Modelo', rotulo: 'Modelo' },
     { campo: 'Status', rotulo: 'Status' },
     { campo: 'ColaboradorAtual', rotulo: 'Responsável / Projeto' },
-    { campo: 'ProximaCalibracao', rotulo: 'Próxima calibração' }
+    { campo: 'ProximaCalibracao', rotulo: 'Próxima calibração' },
+    { campo: null, rotulo: 'Ações' }
   ];
 
   function filtrarOrdenar() {
@@ -49,13 +80,16 @@ export async function viewEquipamentos(main) {
   function linhaHtml(e) {
     const dias = diasAte(e.ProximaCalibracao);
     return `
-      <tr>
+      <tr data-id="${escapeHtml(e.ID)}" title="Clique duas vezes para editar o cadastro">
         <td><a href="#/equipamento/${encodeURIComponent(e.ID)}">${escapeHtml(e.ID)}</a></td>
         <td>${escapeHtml(e.Descricao)}</td>
         <td>${escapeHtml(e.Modelo || '-')}</td>
         <td><span class="badge ${classeBadgeStatus(e.Status)}">${escapeHtml(e.Status)}</span></td>
         <td>${escapeHtml(e.ColaboradorAtual || '-')}</td>
         <td>${e.ProximaCalibracao ? `<span class="badge ${classeCalibracao(dias)}">${formatarData(e.ProximaCalibracao)}${dias !== null ? ` (${dias < 0 ? 'vencida há ' + Math.abs(dias) + 'd' : dias + 'd'})` : ''}</span>` : '-'}</td>
+        <td class="no-print acoes">
+          <button type="button" class="secundario icone-only btn-editar-equipamento" data-id="${escapeHtml(e.ID)}" title="Editar cadastro">${icons.editar}</button>
+        </td>
       </tr>
     `;
   }
@@ -66,7 +100,9 @@ export async function viewEquipamentos(main) {
     estado.pagina = paginaAtual;
 
     const corpo = main.querySelector('#corpo-tabela');
-    corpo.innerHTML = pagina.length ? pagina.map(linhaHtml).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted)">Nenhum equipamento encontrado.</td></tr>';
+    corpo.innerHTML = pagina.length ? pagina.map(linhaHtml).join('') : '<tr><td colspan="7" style="text-align:center; color:var(--text-muted)">Nenhum equipamento encontrado.</td></tr>';
+
+    ligarAcoesLinha();
 
     main.querySelectorAll('th.ordenavel').forEach((th) => {
       const campo = th.dataset.campo;
@@ -102,7 +138,10 @@ export async function viewEquipamentos(main) {
         <table>
           <thead>
             <tr>
-              ${COLUNAS.map((c) => `<th class="ordenavel" data-campo="${c.campo}">${c.rotulo} <span class="seta-ordenar"></span></th>`).join('')}
+              ${COLUNAS.map((c) => c.campo
+                ? `<th class="ordenavel" data-campo="${c.campo}">${c.rotulo} <span class="seta-ordenar"></span></th>`
+                : `<th class="no-print">${c.rotulo}</th>`
+              ).join('')}
             </tr>
           </thead>
           <tbody id="corpo-tabela"></tbody>
@@ -132,6 +171,51 @@ export async function viewEquipamentos(main) {
       renderizarTabela();
     });
   });
+
+  function abrirEdicaoEquipamento(equipamento) {
+    abrirModal({
+      titulo: `Editar ${equipamento.ID}`,
+      conteudoHtml: `
+        <form id="form-editar-equipamento">
+          ${camposEdicaoEquipamento(equipamento)}
+          <p class="msg-erro" id="erro-editar-equipamento" style="display:none"></p>
+          <div class="acoes">
+            <button type="submit">Salvar alterações</button>
+          </div>
+        </form>
+      `
+    });
+    document.getElementById('form-editar-equipamento').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const dados = Object.fromEntries(new FormData(e.target).entries());
+      const erroEl = document.getElementById('erro-editar-equipamento');
+      erroEl.style.display = 'none';
+      try {
+        await api.editarEquipamento({ ID: equipamento.ID, ...dados });
+        fecharModal();
+        await viewEquipamentos(main);
+      } catch (err) {
+        erroEl.textContent = err.message;
+        erroEl.style.display = 'block';
+      }
+    });
+  }
+
+  function ligarAcoesLinha() {
+    main.querySelectorAll('.btn-editar-equipamento').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const equipamento = equipamentos.find((eq) => String(eq.ID) === btn.dataset.id);
+        if (equipamento) abrirEdicaoEquipamento(equipamento);
+      });
+    });
+    main.querySelectorAll('#corpo-tabela tr[data-id]').forEach((tr) => {
+      tr.addEventListener('dblclick', () => {
+        const equipamento = equipamentos.find((eq) => String(eq.ID) === tr.dataset.id);
+        if (equipamento) abrirEdicaoEquipamento(equipamento);
+      });
+    });
+  }
 }
 
 export async function viewEquipamentoForm(main) {

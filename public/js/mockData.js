@@ -21,10 +21,7 @@ function seed() {
     ],
     veiculos: [
       { ID: 'CARRO-01', Placa: 'ABC1D23', Descricao: 'Fiat Strada', Marca: 'Fiat', Ano: '2022', Quilometragem: 32000, DataCompra: '2022-03-01', ValorPago: 95000, Fornecedor: 'Concessionária Exemplo', Status: 'Com colaborador', ColaboradorAtual: 'Fernando Luna', LocalArmazenamento: '', DataAssinaturaContrato: '2024-06-11', PeriodoContratoMeses: 24, VencimentoContrato: semanasA(25), Observacoes: '' },
-      { ID: 'CARRO-02', Placa: 'DEF4G56', Descricao: 'Hyundai HB20', Marca: 'Hyundai', Ano: '2023', Quilometragem: 15400, DataCompra: '2023-01-15', ValorPago: 78000, Fornecedor: 'Concessionária Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Garagem', Observacoes: 'Uso compartilhado por analistas' }
-    ],
-    reservas: [
-      { ID: 'RES-EX0001', VeiculoID: 'CARRO-02', Colaborador: 'Samantha Stocco', Projeto: 'P0001-EXEMPLO', DataHoraSaida: semanasA(1) + 'T08:00', PrevisaoRetorno: semanasA(1) + 'T18:00', DataHoraRetorno: '', HodometroSaida: 15400, HodometroChegada: '', CombustivelLitros: '', CombustivelCusto: '', Status: 'Agendado', Observacoes: '' }
+      { ID: 'CARRO-02', Placa: 'DEF4G56', Descricao: 'Hyundai HB20', Marca: 'Hyundai', Ano: '2023', Quilometragem: 15400, DataCompra: '2023-01-15', ValorPago: 78000, Fornecedor: 'Concessionária Exemplo', Status: 'Em estoque', ColaboradorAtual: '', LocalArmazenamento: 'Garagem', Observacoes: 'Uso compartilhado' }
     ],
     movimentacoes: [
       { ID: 'MOV-EX0001', DataHora: '2023-02-10T10:00:00', ItemID: 'NB-001', Tipo: 'Entrada-Compra', Quantidade: 1, ValorUnitario: 3200, Fornecedor: 'Fornecedor Exemplo', ProjetoDestino: '', ColaboradorEnvolvido: '', ChecadoPor: '', DataDevolucaoPrevista: '', DataDevolucaoReal: '', Observacoes: 'Registro de exemplo' },
@@ -39,10 +36,7 @@ function seed() {
       { Codigo: 'P0001-EXEMPLO', Cliente: 'Cliente Exemplo', Status: 'Ativo' }
     ],
     materiaisReferencia: [
-      { ID: 'MR-EX01', Identificacao: 'MR-Solução Tampão de pH 7,01', Certificador: 'Elus', NumeroCertificado: 'MR-053/250225-ELPHS7-1673', Lote: '1673', IncertezaMedicao: 'pH (7,01 ± 0,03) @ 25°C', Validade: semanasA(40), Status: 'Em uso', Observacoes: '' }
-    ],
-    usuarios: [
-      { Nome: 'Samantha Stocco', Usuario: 'samantha.stocco', SenhaHash: 'demo', Papel: 'analista', Status: 'Ativo' }
+      { ID: 'MR-EX01', Identificacao: 'MR-Solução Tampão de pH 7,01', Certificador: 'Elus', NumeroCertificado: 'MR-053/250225-ELPHS7-1673', Lote: '1673', IncertezaMedicao: 'pH (7,01 ± 0,03) @ 25°C', Validade: semanasA(40), Status: 'Em uso', TecnicoResponsavel: '', Observacoes: '' }
     ]
   };
 }
@@ -57,8 +51,6 @@ function carregar() {
   const db = JSON.parse(bruto);
   if (!db.equipamentos) db.equipamentos = [];
   if (!db.veiculos) db.veiculos = [];
-  if (!db.reservas) db.reservas = [];
-  if (!db.usuarios) db.usuarios = [];
   return db;
 }
 
@@ -70,21 +62,31 @@ export function resetarDadosDemo() {
   localStorage.removeItem(CHAVE);
 }
 
-// Usado só pelo login de analista em modo de demonstração, pra pré-selecionar
-// o nome certo nos formulários (o login em si aceita qualquer senha, igual ao
-// login de admin em modo demo).
-export function encontrarUsuarioDemo(usuario) {
-  const db = carregar();
-  return db.usuarios.find((u) => u.Usuario.toLowerCase() === String(usuario || '').toLowerCase() && u.Status !== 'Inativo');
-}
-
 function novoId(prefixo) {
   return `${prefixo}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
 }
 
+// Espelha normalizarTecnicos_ do Code.gs — lista de técnicos de um lote,
+// separada por vírgula, sem espaço/vazio/repetido.
+function normalizarTecnicos(valor) {
+  const lista = Array.isArray(valor) ? valor : String(valor || '').split(',');
+  const vistos = new Set();
+  const limpos = [];
+  lista.forEach((nome) => {
+    const n = String(nome || '').trim();
+    if (!n || vistos.has(n.toLowerCase())) return;
+    vistos.add(n.toLowerCase());
+    limpos.push(n);
+  });
+  return limpos.join(', ');
+}
+
 function diasAte(dataStr) {
   if (!dataStr) return null;
-  const data = new Date(dataStr);
+  // Mesmo motivo de paraData em util.js: 'YYYY-MM-DD' puro seria lido como UTC
+  // e, no Brasil, cairia no dia anterior.
+  const texto = String(dataStr);
+  const data = /^\d{4}-\d{2}-\d{2}$/.test(texto) ? new Date(`${texto}T00:00:00`) : new Date(texto);
   if (isNaN(data.getTime())) return null;
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -136,28 +138,6 @@ function acharAlvo(db, id) {
   const veiculo = db.veiculos.find((v) => String(v.ID) === String(id));
   if (veiculo) return veiculo;
   throw new Error('Item/veículo não encontrado: ' + id);
-}
-
-function acharReserva(db, id) {
-  const reserva = db.reservas.find((r) => String(r.ID) === String(id));
-  if (!reserva) throw new Error('Reserva não encontrada: ' + id);
-  return reserva;
-}
-
-function fimDaReserva(r) {
-  return new Date(r.DataHoraRetorno || r.PrevisaoRetorno || r.DataHoraSaida);
-}
-
-function reservasAtivas(db, veiculoId) {
-  return db.reservas.filter((r) => String(r.VeiculoID) === String(veiculoId) && (r.Status === 'Agendado' || r.Status === 'Em andamento'));
-}
-
-function verificarDisponibilidade(db, veiculoId, inicio, fim) {
-  if (!veiculoId || !inicio) throw new Error('Informe o veículo e a data/hora de início.');
-  const inicioData = new Date(inicio);
-  const fimData = fim ? new Date(fim) : new Date(inicioData.getTime() + 60 * 60 * 1000);
-  const conflitos = reservasAtivas(db, veiculoId).filter((r) => inicioData < fimDaReserva(r) && new Date(r.DataHoraSaida) < fimData);
-  return { disponivel: conflitos.length === 0, conflitos };
 }
 
 export function mockCall(action, payload = {}) {
@@ -218,7 +198,9 @@ export function mockCall(action, payload = {}) {
         .map((e) => ({ tipo: 'Calibração', id: e.ID, descricao: e.Descricao, data: e.ProximaCalibracao, diasRestantes: diasAte(e.ProximaCalibracao) }))
         .filter((a) => a.diasRestantes !== null && a.diasRestantes <= dias);
       const validades = db.materiaisReferencia
-        .filter((m) => m.Validade && m.Status !== 'Descartado')
+        // Mesma lista de MATERIAL_STATUS_INATIVOS_ do Code.gs: lote fora de uso
+        // não gera aviso de validade.
+        .filter((m) => m.Validade && !['Descartado', 'Removido', 'Substituído'].includes(m.Status))
         .map((m) => ({ tipo: 'Validade material de referência', id: m.ID, descricao: m.Identificacao, data: m.Validade, diasRestantes: diasAte(m.Validade) }))
         .filter((a) => a.diasRestantes !== null && a.diasRestantes <= dias);
       const contratosVeiculos = db.veiculos
@@ -286,6 +268,23 @@ export function mockCall(action, payload = {}) {
       resultado = { ID: equipamento.ID };
       break;
     }
+    case 'editarEquipamento': {
+      const equipamento = acharEquipamento(db, payload.ID);
+      const campos = ['Descricao', 'Marca', 'Modelo', 'NumeroSerie', 'LocalArmazenamento', 'ValorPago', 'Fornecedor', 'DataCompra', 'UltimaCalibracao', 'ProximaCalibracao', 'NumeroCertificadoCalibracao', 'Observacoes'];
+      const mudancas = [];
+      campos.forEach((campo) => {
+        if (payload[campo] === undefined) return;
+        const novo = campo === 'ValorPago' ? (Number(payload[campo]) || 0) : (payload[campo] || '');
+        const antigo = equipamento[campo] !== undefined && equipamento[campo] !== null ? equipamento[campo] : '';
+        if (String(antigo) === String(novo)) return;
+        mudancas.push(`${campo}: "${antigo}" -> "${novo}"`);
+        equipamento[campo] = novo;
+      });
+      if (mudancas.length === 0) { resultado = { ID: payload.ID, alterado: false }; break; }
+      registrarMovimentacao(db, { ItemID: payload.ID, Tipo: 'Edicao-Cadastro', Observacoes: mudancas.join(' | ') });
+      resultado = { ID: payload.ID, alterado: true };
+      break;
+    }
     case 'registrarLocacao': {
       const equipamento = acharEquipamento(db, payload.ItemID);
       resultado = registrarMovimentacao(db, { ...payload, Tipo: 'Locacao-Equipamento' });
@@ -342,105 +341,13 @@ export function mockCall(action, payload = {}) {
       db.projetos.push({ Codigo: payload.Codigo, Cliente: payload.Cliente || '', Status: payload.Status || 'Ativo' });
       resultado = { Codigo: payload.Codigo };
       break;
-    case 'listReservas': {
-      let lista = [...db.reservas].sort((a, b) => new Date(b.DataHoraSaida) - new Date(a.DataHoraSaida));
-      if (payload.veiculoId) lista = lista.filter((r) => String(r.VeiculoID) === String(payload.veiculoId));
-      if (payload.colaborador) lista = lista.filter((r) => r.Colaborador === payload.colaborador);
-      if (payload.status) lista = lista.filter((r) => r.Status === payload.status);
-      resultado = lista;
-      break;
-    }
-    case 'getReserva':
-      resultado = acharReserva(db, payload.id);
-      break;
-    case 'verificarDisponibilidade':
-      resultado = verificarDisponibilidade(db, payload.veiculoId, payload.inicio, payload.fim);
-      break;
-    case 'responsavelNaData': {
-      if (!payload.veiculoId || !payload.data) throw new Error('Informe o veículo e a data.');
-      const alvo = new Date(payload.data);
-      const reserva = db.reservas.find((r) => String(r.VeiculoID) === String(payload.veiculoId) && r.Status !== 'Cancelado' && new Date(r.DataHoraSaida) <= alvo && alvo <= fimDaReserva(r));
-      if (reserva) {
-        resultado = { veiculoId: payload.veiculoId, data: payload.data, colaborador: reserva.Colaborador, origem: 'reserva', reservaId: reserva.ID };
-      } else {
-        const veiculo = acharVeiculo(db, payload.veiculoId);
-        resultado = { veiculoId: payload.veiculoId, data: payload.data, colaborador: veiculo.ColaboradorAtual || '', origem: 'padrao' };
-      }
-      break;
-    }
-    case 'criarReserva': {
-      if (!payload.VeiculoID || !payload.Colaborador || !payload.DataHoraSaida) throw new Error('Informe o veículo, o colaborador e a data/hora de saída.');
-      acharVeiculo(db, payload.VeiculoID);
-      if (!verificarDisponibilidade(db, payload.VeiculoID, payload.DataHoraSaida, payload.PrevisaoRetorno).disponivel) {
-        throw new Error('Veículo já reservado nesse período.');
-      }
-      const registro = {
-        ID: novoId('RES'), VeiculoID: payload.VeiculoID, Colaborador: payload.Colaborador, Projeto: payload.Projeto || '',
-        DataHoraSaida: payload.DataHoraSaida, PrevisaoRetorno: payload.PrevisaoRetorno || '',
-        DataHoraRetorno: '', HodometroSaida: Number(payload.HodometroSaida) || 0, HodometroChegada: '', CombustivelLitros: '', CombustivelCusto: '',
-        Status: new Date(payload.DataHoraSaida) <= new Date() ? 'Em andamento' : 'Agendado', Observacoes: payload.Observacoes || ''
-      };
-      db.reservas.push(registro);
-      resultado = registro;
-      break;
-    }
-    case 'iniciarRetiradaReserva': {
-      const reserva = acharReserva(db, payload.ID);
-      if (reserva.Status !== 'Agendado') throw new Error('Esta reserva não está aguardando retirada.');
-      reserva.Status = 'Em andamento';
-      if (payload.HodometroSaida !== undefined && payload.HodometroSaida !== '') reserva.HodometroSaida = Number(payload.HodometroSaida);
-      if (payload.DataHoraSaida) reserva.DataHoraSaida = payload.DataHoraSaida;
-      resultado = reserva;
-      break;
-    }
-    case 'registrarRetornoReserva': {
-      const reserva = acharReserva(db, payload.ID);
-      if (reserva.Status !== 'Em andamento' && reserva.Status !== 'Agendado') throw new Error('Esta reserva já foi concluída ou cancelada.');
-      reserva.DataHoraRetorno = payload.DataHoraRetorno || new Date().toISOString();
-      reserva.HodometroChegada = Number(payload.HodometroChegada) || 0;
-      reserva.CombustivelLitros = payload.CombustivelLitros !== undefined && payload.CombustivelLitros !== '' ? Number(payload.CombustivelLitros) : '';
-      reserva.CombustivelCusto = payload.CombustivelCusto !== undefined && payload.CombustivelCusto !== '' ? Number(payload.CombustivelCusto) : '';
-      reserva.Status = 'Concluído';
-      if (payload.Observacoes) reserva.Observacoes = (reserva.Observacoes ? reserva.Observacoes + ' | ' : '') + payload.Observacoes;
-      if (payload.HodometroChegada) acharVeiculo(db, reserva.VeiculoID).Quilometragem = Number(payload.HodometroChegada);
-      resultado = reserva;
-      break;
-    }
-    case 'cancelarReserva': {
-      const reserva = acharReserva(db, payload.ID);
-      if (reserva.Status === 'Concluído') throw new Error('Esta reserva já foi concluída, não pode ser cancelada.');
-      reserva.Status = 'Cancelado';
-      reserva.Observacoes = (reserva.Observacoes ? reserva.Observacoes + ' | ' : '') + (payload.Observacoes || 'Cancelada.');
-      resultado = reserva;
-      break;
-    }
-    case 'listUsuarios':
-      resultado = db.usuarios.map((u) => ({ Nome: u.Nome, Usuario: u.Usuario, Papel: u.Papel, Status: u.Status }));
-      break;
-    case 'criarUsuario': {
-      // Em modo de demonstração não há Netlify Function pra fazer o hash antes —
-      // aceita a senha em texto puro só pra alimentar os dados de exemplo locais.
-      const senha = payload.SenhaHash || payload.senha;
-      if (!payload.Nome || !payload.Usuario || !senha) throw new Error('Informe nome, usuário e senha.');
-      if (db.usuarios.some((u) => u.Usuario.toLowerCase() === payload.Usuario.toLowerCase())) throw new Error('Já existe um usuário com este nome de usuário: ' + payload.Usuario);
-      db.usuarios.push({ Nome: payload.Nome, Usuario: payload.Usuario, SenhaHash: senha, Papel: 'analista', Status: 'Ativo' });
-      resultado = { Usuario: payload.Usuario };
-      break;
-    }
-    case 'desativarUsuario': {
-      const usuario = db.usuarios.find((u) => u.Usuario === payload.Usuario);
-      if (!usuario) throw new Error('Usuário não encontrado: ' + payload.Usuario);
-      usuario.Status = 'Inativo';
-      resultado = { Usuario: payload.Usuario };
-      break;
-    }
     case 'criarMaterialReferencia': {
       if (!payload.Identificacao) throw new Error('Informe a identificação do material.');
       const id = payload.ID || novoId('MR');
       db.materiaisReferencia.push({
         ID: id, Identificacao: payload.Identificacao, Certificador: payload.Certificador || '', NumeroCertificado: payload.NumeroCertificado || '',
         Lote: payload.Lote || '', IncertezaMedicao: payload.IncertezaMedicao || '', Validade: payload.Validade || '',
-        Status: payload.Status || 'Em uso', TecnicoResponsavel: payload.TecnicoResponsavel || '', Observacoes: payload.Observacoes || ''
+        Status: payload.Status || 'Em uso', TecnicoResponsavel: normalizarTecnicos(payload.TecnicoResponsavel), Observacoes: payload.Observacoes || ''
       });
       resultado = { ID: id };
       break;
@@ -448,7 +355,7 @@ export function mockCall(action, payload = {}) {
     case 'atualizarResponsavelMaterialReferencia': {
       const material = db.materiaisReferencia.find((m) => String(m.ID) === String(payload.ID));
       if (!material) throw new Error('Material de referência não encontrado: ' + payload.ID);
-      material.TecnicoResponsavel = payload.TecnicoResponsavel || '';
+      material.TecnicoResponsavel = normalizarTecnicos(payload.TecnicoResponsavel);
       resultado = { ID: material.ID, TecnicoResponsavel: material.TecnicoResponsavel };
       break;
     }
@@ -456,7 +363,39 @@ export function mockCall(action, payload = {}) {
       const material = db.materiaisReferencia.find((m) => String(m.ID) === String(payload.ID));
       if (!material) throw new Error('Material de referência não encontrado: ' + payload.ID);
       Object.assign(material, payload);
+      if (payload.TecnicoResponsavel !== undefined) material.TecnicoResponsavel = normalizarTecnicos(payload.TecnicoResponsavel);
       resultado = material;
+      break;
+    }
+    case 'duplicarMaterialReferencia': {
+      const origem = db.materiaisReferencia.find((m) => String(m.ID) === String(payload.IDOrigem));
+      if (!origem) throw new Error('Material de referência não encontrado: ' + payload.IDOrigem);
+      if (!payload.Lote) throw new Error('Informe o lote do novo material.');
+      if (!payload.NumeroCertificado) throw new Error('Informe o número do certificado.');
+      if (!payload.Validade) throw new Error('Informe a validade.');
+      const idNovo = novoId('MR');
+      db.materiaisReferencia.push({
+        ID: idNovo,
+        Identificacao: origem.Identificacao,
+        Certificador: origem.Certificador,
+        NumeroCertificado: payload.NumeroCertificado,
+        Lote: payload.Lote,
+        IncertezaMedicao: origem.IncertezaMedicao,
+        Validade: payload.Validade,
+        Status: 'Em uso',
+        TecnicoResponsavel: payload.TecnicoResponsavel !== undefined ? payload.TecnicoResponsavel : origem.TecnicoResponsavel,
+        Observacoes: payload.Observacoes || ''
+      });
+      if (payload.SubstituirOrigem) {
+        origem.Status = 'Substituído';
+        registrarMovimentacao(db, {
+          ItemID: idNovo,
+          Tipo: 'Substituicao-Lote',
+          Observacoes: 'Lote anterior: ' + origem.Lote + ' -> Novo lote: ' + payload.Lote +
+            (payload.Motivo ? ' | Motivo: ' + payload.Motivo : '')
+        });
+      }
+      resultado = { ID: idNovo };
       break;
     }
     case 'removerMaterialReferencia': {

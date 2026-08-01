@@ -2,8 +2,7 @@
  * Backend do Sistema de Controle de Insumos, Patrimônio e Equipamentos.
  * Cole este arquivo no editor do Google Apps Script (script.google.com),
  * ligado a uma planilha Google Sheets com as abas:
- *   Itens, Equipamentos, Veiculos, Movimentacoes, Colaboradores, Projetos, MateriaisReferencia,
- *   Reservas, Usuarios
+ *   Itens, Equipamentos, Veiculos, Movimentacoes, Colaboradores, Projetos, MateriaisReferencia
  * (ver docs/planilha-modelo.md para os cabeçalhos exatos de cada aba).
  *
  * Itens = patrimônio de TI (notebook, celular, mouse etc.), alocado a colaboradores.
@@ -11,9 +10,10 @@
  * Veiculos = carros da frota, alocados de forma fixa a colaboradores (mesmo padrão de Itens).
  * Movimentacoes é compartilhada pelas três, para manter um histórico único e o custo
  * por projeto consolidado.
- * Reservas = uso de um veículo por um período (agendamento futuro, retirada imediata, empréstimo
- * temporário de um veículo normalmente fixo, ou devolução) — independente da alocação fixa acima.
- * Usuarios = login individual dos analistas (acesso reduzido, só à reserva de veículos).
+ *
+ * O controle de reserva de veículo por período e o login individual de analista foram
+ * removidos deste sistema — a reserva de frota é feita em outro sistema já existente.
+ * O acesso aqui é só de administrador (senha única ADMIN_PASSWORD no Netlify).
  *
  * Configuração necessária (menu Configuração do projeto > Propriedades do script):
  *   SHEET_ID     -> ID da planilha (está na URL entre /d/ e /edit)
@@ -125,7 +125,7 @@ function doPost(e) {
   }
 }
 
-var READ_ACTIONS_ = ['listItens', 'getItem', 'listEquipamentos', 'getEquipamento', 'listVeiculos', 'getVeiculo', 'listMovimentacoes', 'listColaboradores', 'listProjetos', 'custoPorProjeto', 'listMateriaisReferencia', 'avisos', 'listReservas', 'getReserva', 'verificarDisponibilidade', 'responsavelNaData', 'verificarUsuario', 'listUsuarios'];
+var READ_ACTIONS_ = ['listItens', 'getItem', 'listEquipamentos', 'getEquipamento', 'listVeiculos', 'getVeiculo', 'listMovimentacoes', 'listColaboradores', 'listProjetos', 'custoPorProjeto', 'listMateriaisReferencia', 'avisos'];
 
 function routeAny_(action, params) {
   return READ_ACTIONS_.indexOf(action) !== -1 ? routeRead_(action, params) : routeWrite_(action, params);
@@ -157,18 +157,6 @@ function routeRead_(action, params) {
       return sheetToObjects_(getSheet_('MateriaisReferencia'));
     case 'avisos':
       return avisos_(params.dias ? Number(params.dias) : 60);
-    case 'listReservas':
-      return listReservas_(params.veiculoId, params.colaborador, params.status);
-    case 'getReserva':
-      return getReserva_(params.id);
-    case 'verificarDisponibilidade':
-      return verificarDisponibilidade_(params.veiculoId, params.inicio, params.fim);
-    case 'responsavelNaData':
-      return responsavelNaData_(params.veiculoId, params.data);
-    case 'verificarUsuario':
-      return verificarUsuario_(params.usuario, params.senhaHash);
-    case 'listUsuarios':
-      return listUsuarios_();
     default:
       throw new Error('Ação de leitura desconhecida: ' + action);
   }
@@ -188,6 +176,8 @@ function routeWrite_(action, payload) {
       return registrarDevolucao_(payload);
     case 'criarEquipamento':
       return criarEquipamento_(payload);
+    case 'editarEquipamento':
+      return editarEquipamento_(payload);
     case 'registrarLocacao':
       return registrarLocacao_(payload);
     case 'registrarDevolucaoEquipamento':
@@ -204,22 +194,12 @@ function routeWrite_(action, payload) {
       return criarMaterialReferencia_(payload);
     case 'importarLote':
       return importarLote_(payload);
-    case 'criarReserva':
-      return criarReserva_(payload);
-    case 'iniciarRetiradaReserva':
-      return iniciarRetiradaReserva_(payload);
-    case 'registrarRetornoReserva':
-      return registrarRetornoReserva_(payload);
-    case 'cancelarReserva':
-      return cancelarReserva_(payload);
-    case 'criarUsuario':
-      return criarUsuario_(payload);
-    case 'desativarUsuario':
-      return desativarUsuario_(payload);
     case 'atualizarResponsavelMaterialReferencia':
       return atualizarResponsavelMaterialReferencia_(payload);
     case 'editarMaterialReferencia':
       return editarMaterialReferencia_(payload);
+    case 'duplicarMaterialReferencia':
+      return duplicarMaterialReferencia_(payload);
     case 'removerMaterialReferencia':
       return removerMaterialReferencia_(payload);
     case 'atualizarContratoVeiculo':
@@ -491,6 +471,47 @@ function registrarDevolucaoEquipamento_(p) {
   return mov;
 }
 
+// Campos do cadastro que podem ser corrigidos pela tela de edição — igual ao
+// que o front-end manda (ver camposEdicaoEquipamento em public/js/views/equipamentos.js).
+// Status e ColaboradorAtual ficam de fora: só mudam pelas ações de locação/devolução.
+var EQUIPAMENTO_CAMPOS_EDITAVEIS_ = [
+  'Descricao', 'Marca', 'Modelo', 'NumeroSerie', 'LocalArmazenamento', 'ValorPago',
+  'Fornecedor', 'DataCompra', 'UltimaCalibracao', 'ProximaCalibracao',
+  'NumeroCertificadoCalibracao', 'Observacoes'
+];
+
+// Edita o cadastro do equipamento preservando os valores antigos: antes de
+// sobrescrever a linha, registra uma movimentação com "campo: de -> para" de
+// cada campo que realmente mudou, então esse antes/depois nunca se perde —
+// fica no histórico do equipamento, só não sobrescreve a linha atual da aba.
+function editarEquipamento_(p) {
+  if (!p.ID) throw new Error('Informe o equipamento a editar.');
+  var sheet = getSheet_('Equipamentos');
+  var atual = sheetToObjects_(sheet).filter(function (e) { return String(e.ID) === String(p.ID); })[0];
+  if (!atual) throw new Error('Equipamento não encontrado: ' + p.ID);
+
+  var patch = {};
+  var mudancas = [];
+  EQUIPAMENTO_CAMPOS_EDITAVEIS_.forEach(function (campo) {
+    if (p[campo] === undefined) return;
+    var novo = campo === 'ValorPago' ? toNumber_(p[campo]) : (p[campo] || '');
+    var antigo = atual[campo] !== undefined && atual[campo] !== null ? atual[campo] : '';
+    if (String(antigo) === String(novo)) return;
+    patch[campo] = novo;
+    mudancas.push(campo + ': "' + antigo + '" -> "' + novo + '"');
+  });
+
+  if (mudancas.length === 0) return { ID: p.ID, alterado: false };
+
+  registrarMovimentacao_({
+    ItemID: p.ID,
+    Tipo: 'Edicao-Cadastro',
+    Observacoes: mudancas.join(' | ')
+  });
+  updateRowById_(sheet, 'ID', p.ID, patch);
+  return { ID: p.ID, alterado: true };
+}
+
 function registrarCalibracaoEquipamento_(p) {
   if (!p.ItemID || !p.ProximaCalibracao) throw new Error('Informe o equipamento e a próxima calibração.');
   var equipamentos = getSheet_('Equipamentos');
@@ -559,181 +580,6 @@ function atualizarContratoVeiculo_(p) {
 }
 
 // ---------------------------------------------------------------------------
-// Reservas: uso/reserva de veículos por período (agendamento, retirada,
-// empréstimo temporário de um veículo normalmente fixo, e devolução).
-// Independente da alocação fixa acima — um veículo pode ter ColaboradorAtual
-// fixo e ainda assim ter Reservas pontuais registradas em cima dele.
-// ---------------------------------------------------------------------------
-
-function listReservas_(veiculoId, colaborador, status) {
-  var all = sheetToObjects_(getSheet_('Reservas'));
-  all.sort(function (a, b) { return new Date(b.DataHoraSaida) - new Date(a.DataHoraSaida); });
-  return all.filter(function (r) {
-    if (veiculoId && String(r.VeiculoID) !== String(veiculoId)) return false;
-    if (colaborador && r.Colaborador !== colaborador) return false;
-    if (status && r.Status !== status) return false;
-    return true;
-  });
-}
-
-function getReserva_(id) {
-  var reserva = sheetToObjects_(getSheet_('Reservas')).filter(function (r) { return String(r.ID) === String(id); })[0];
-  if (!reserva) throw new Error('Reserva não encontrada: ' + id);
-  return reserva;
-}
-
-function reservasAtivas_(veiculoId) {
-  return sheetToObjects_(getSheet_('Reservas')).filter(function (r) {
-    return String(r.VeiculoID) === String(veiculoId) && (r.Status === 'Agendado' || r.Status === 'Em andamento');
-  });
-}
-
-function fimDaReserva_(r) {
-  return new Date(r.DataHoraRetorno || r.PrevisaoRetorno || r.DataHoraSaida);
-}
-
-function intervalosSobrepoem_(inicioA, fimA, inicioB, fimB) {
-  return inicioA < fimB && inicioB < fimA;
-}
-
-function verificarDisponibilidade_(veiculoId, inicio, fim) {
-  if (!veiculoId || !inicio) throw new Error('Informe o veículo e a data/hora de início.');
-  var inicioData = new Date(inicio);
-  var fimData = fim ? new Date(fim) : new Date(inicioData.getTime() + 60 * 60 * 1000);
-  var conflitos = reservasAtivas_(veiculoId).filter(function (r) {
-    return intervalosSobrepoem_(inicioData, fimData, new Date(r.DataHoraSaida), fimDaReserva_(r));
-  });
-  return { disponivel: conflitos.length === 0, conflitos: conflitos };
-}
-
-function responsavelNaData_(veiculoId, data) {
-  if (!veiculoId || !data) throw new Error('Informe o veículo e a data.');
-  var alvo = new Date(data);
-  var reservas = sheetToObjects_(getSheet_('Reservas')).filter(function (r) {
-    if (String(r.VeiculoID) !== String(veiculoId) || r.Status === 'Cancelado') return false;
-    return new Date(r.DataHoraSaida) <= alvo && alvo <= fimDaReserva_(r);
-  });
-  if (reservas.length > 0) {
-    return { veiculoId: veiculoId, data: data, colaborador: reservas[0].Colaborador, origem: 'reserva', reservaId: reservas[0].ID };
-  }
-  var veiculo = getVeiculo_(veiculoId);
-  return { veiculoId: veiculoId, data: data, colaborador: veiculo.ColaboradorAtual || '', origem: 'padrao' };
-}
-
-function criarReserva_(p) {
-  if (!p.VeiculoID || !p.Colaborador || !p.DataHoraSaida) {
-    throw new Error('Informe o veículo, o colaborador e a data/hora de saída.');
-  }
-  if (findRowIndexById_(getSheet_('Veiculos'), 'ID', p.VeiculoID) === -1) {
-    throw new Error('Veículo não cadastrado: ' + p.VeiculoID);
-  }
-  var disponibilidade = verificarDisponibilidade_(p.VeiculoID, p.DataHoraSaida, p.PrevisaoRetorno);
-  if (!disponibilidade.disponivel) throw new Error('Veículo já reservado nesse período.');
-
-  var status = new Date(p.DataHoraSaida) <= new Date() ? 'Em andamento' : 'Agendado';
-  var registro = {
-    ID: newId_('RES'),
-    VeiculoID: p.VeiculoID,
-    Colaborador: p.Colaborador,
-    Projeto: p.Projeto || '',
-    DataHoraSaida: p.DataHoraSaida,
-    PrevisaoRetorno: p.PrevisaoRetorno || '',
-    DataHoraRetorno: '',
-    HodometroSaida: toNumber_(p.HodometroSaida),
-    HodometroChegada: '',
-    CombustivelLitros: '',
-    CombustivelCusto: '',
-    Status: status,
-    Observacoes: p.Observacoes || ''
-  };
-  appendObject_(getSheet_('Reservas'), registro);
-  return registro;
-}
-
-function iniciarRetiradaReserva_(p) {
-  if (!p.ID) throw new Error('Informe a reserva.');
-  var reserva = getReserva_(p.ID);
-  if (reserva.Status !== 'Agendado') throw new Error('Esta reserva não está aguardando retirada.');
-  var patch = { Status: 'Em andamento' };
-  if (p.HodometroSaida !== undefined && p.HodometroSaida !== '') patch.HodometroSaida = toNumber_(p.HodometroSaida);
-  if (p.DataHoraSaida) patch.DataHoraSaida = p.DataHoraSaida;
-  updateRowById_(getSheet_('Reservas'), 'ID', p.ID, patch);
-  return getReserva_(p.ID);
-}
-
-function registrarRetornoReserva_(p) {
-  if (!p.ID) throw new Error('Informe a reserva.');
-  var reserva = getReserva_(p.ID);
-  if (reserva.Status !== 'Em andamento' && reserva.Status !== 'Agendado') {
-    throw new Error('Esta reserva já foi concluída ou cancelada.');
-  }
-  var patch = {
-    DataHoraRetorno: p.DataHoraRetorno || new Date(),
-    HodometroChegada: toNumber_(p.HodometroChegada),
-    CombustivelLitros: p.CombustivelLitros !== undefined && p.CombustivelLitros !== '' ? toNumber_(p.CombustivelLitros) : '',
-    CombustivelCusto: p.CombustivelCusto !== undefined && p.CombustivelCusto !== '' ? toNumber_(p.CombustivelCusto) : '',
-    Status: 'Concluído'
-  };
-  if (p.Observacoes) patch.Observacoes = (reserva.Observacoes ? reserva.Observacoes + ' | ' : '') + p.Observacoes;
-  updateRowById_(getSheet_('Reservas'), 'ID', p.ID, patch);
-
-  if (p.HodometroChegada) {
-    updateRowById_(getSheet_('Veiculos'), 'ID', reserva.VeiculoID, { Quilometragem: toNumber_(p.HodometroChegada) });
-  }
-  return getReserva_(p.ID);
-}
-
-function cancelarReserva_(p) {
-  if (!p.ID) throw new Error('Informe a reserva.');
-  var reserva = getReserva_(p.ID);
-  if (reserva.Status === 'Concluído') throw new Error('Esta reserva já foi concluída, não pode ser cancelada.');
-  updateRowById_(getSheet_('Reservas'), 'ID', p.ID, {
-    Status: 'Cancelado',
-    Observacoes: (reserva.Observacoes ? reserva.Observacoes + ' | ' : '') + (p.Observacoes || 'Cancelada.')
-  });
-  return getReserva_(p.ID);
-}
-
-// ---------------------------------------------------------------------------
-// Usuarios: login individual dos analistas (acesso reduzido, só reserva de
-// veículos). Administrador continua com a senha única ADMIN_PASSWORD, fora
-// desta aba. A senha em texto puro nunca chega até aqui — o hash é calculado
-// na Netlify Function antes de chamar estas ações (ver netlify/functions/_auth.js).
-// ---------------------------------------------------------------------------
-
-function listUsuarios_() {
-  return sheetToObjects_(getSheet_('Usuarios')).map(function (u) {
-    return { Nome: u.Nome, Usuario: u.Usuario, Papel: u.Papel, Status: u.Status };
-  });
-}
-
-function verificarUsuario_(usuario, senhaHash) {
-  if (!usuario || !senhaHash) return { ok: false };
-  var linha = sheetToObjects_(getSheet_('Usuarios')).filter(function (u) {
-    return String(u.Usuario).toLowerCase() === String(usuario).toLowerCase() && u.Status !== 'Inativo';
-  })[0];
-  if (!linha || String(linha.SenhaHash) !== String(senhaHash)) return { ok: false };
-  return { ok: true, nome: linha.Nome, papel: 'analista' };
-}
-
-function criarUsuario_(p) {
-  if (!p.Nome || !p.Usuario || !p.SenhaHash) throw new Error('Informe nome, usuário e senha.');
-  var sheet = getSheet_('Usuarios');
-  var jaExiste = sheetToObjects_(sheet).some(function (u) { return String(u.Usuario).toLowerCase() === String(p.Usuario).toLowerCase(); });
-  if (jaExiste) throw new Error('Já existe um usuário com este nome de usuário: ' + p.Usuario);
-  appendObject_(sheet, { Nome: p.Nome, Usuario: p.Usuario, SenhaHash: p.SenhaHash, Papel: 'analista', Status: 'Ativo' });
-  return { Usuario: p.Usuario };
-}
-
-function desativarUsuario_(p) {
-  if (!p.Usuario) throw new Error('Informe o usuário.');
-  var sheet = getSheet_('Usuarios');
-  if (findRowIndexById_(sheet, 'Usuario', p.Usuario) === -1) throw new Error('Usuário não encontrado: ' + p.Usuario);
-  updateRowById_(sheet, 'Usuario', p.Usuario, { Status: 'Inativo' });
-  return { Usuario: p.Usuario };
-}
-
-// ---------------------------------------------------------------------------
 // Colaboradores / Projetos / Materiais de Referência
 // ---------------------------------------------------------------------------
 
@@ -758,6 +604,33 @@ function criarProjeto_(p) {
   return { Codigo: p.Codigo };
 }
 
+// Status que significam "esse lote não está mais em uso" — não devem gerar aviso
+// de validade nem aparecer na lista ativa. 'Substituído' entra aqui porque a troca
+// de lote (PT-007-F01) não é descarte nem remoção: o lote sai de uso, mas a linha
+// fica na planilha como histórico de qual lote foi trocado por qual.
+var MATERIAL_STATUS_INATIVOS_ = ['Descartado', 'Removido', 'Substituído'];
+
+function materialAtivo_(m) {
+  return MATERIAL_STATUS_INATIVOS_.indexOf(String(m.Status)) === -1;
+}
+
+// Um mesmo lote costuma ser fracionado entre vários técnicos (PT-007), então
+// TecnicoResponsavel guarda uma lista separada por vírgula em vez de um nome só
+// — assim um lote é um registro único, sem linha duplicada por técnico.
+// Aceita string ("A, B") ou array (["A","B"]), tira espaço/vazio/repetido.
+function normalizarTecnicos_(valor) {
+  var lista = Object.prototype.toString.call(valor) === '[object Array]' ? valor : String(valor || '').split(',');
+  var vistos = {};
+  var limpos = [];
+  lista.forEach(function (nome) {
+    var n = String(nome || '').trim();
+    if (!n || vistos[n.toLowerCase()]) return;
+    vistos[n.toLowerCase()] = true;
+    limpos.push(n);
+  });
+  return limpos.join(', ');
+}
+
 function criarMaterialReferencia_(p) {
   if (!p.Identificacao) throw new Error('Informe a identificação do material.');
   var sheet = getSheet_('MateriaisReferencia');
@@ -771,7 +644,7 @@ function criarMaterialReferencia_(p) {
     IncertezaMedicao: p.IncertezaMedicao || '',
     Validade: p.Validade || '',
     Status: p.Status || 'Em uso',
-    TecnicoResponsavel: p.TecnicoResponsavel || '',
+    TecnicoResponsavel: normalizarTecnicos_(p.TecnicoResponsavel),
     Observacoes: p.Observacoes || ''
   });
   return { ID: id };
@@ -790,8 +663,9 @@ function atualizarResponsavelMaterialReferencia_(p) {
   if (!p.ID) throw new Error('Informe o material de referência.');
   var sheet = getSheet_('MateriaisReferencia');
   if (findRowIndexById_(sheet, 'ID', p.ID) === -1) throw new Error('Material de referência não encontrado: ' + p.ID);
-  updateRowById_(sheet, 'ID', p.ID, { TecnicoResponsavel: p.TecnicoResponsavel || '' });
-  return { ID: p.ID, TecnicoResponsavel: p.TecnicoResponsavel || '' };
+  var tecnicos = normalizarTecnicos_(p.TecnicoResponsavel);
+  updateRowById_(sheet, 'ID', p.ID, { TecnicoResponsavel: tecnicos });
+  return { ID: p.ID, TecnicoResponsavel: tecnicos };
 }
 
 // Edição geral do material de referência — atualiza só os campos informados
@@ -800,8 +674,52 @@ function editarMaterialReferencia_(p) {
   if (!p.ID) throw new Error('Informe o material de referência.');
   var sheet = getSheet_('MateriaisReferencia');
   if (findRowIndexById_(sheet, 'ID', p.ID) === -1) throw new Error('Material de referência não encontrado: ' + p.ID);
-  updateRowById_(sheet, 'ID', p.ID, p);
+  var patch = {};
+  Object.keys(p).forEach(function (k) { if (k !== 'ID') patch[k] = p[k]; });
+  if (patch.TecnicoResponsavel !== undefined) patch.TecnicoResponsavel = normalizarTecnicos_(patch.TecnicoResponsavel);
+  updateRowById_(sheet, 'ID', p.ID, patch);
   return getMaterialReferencia_(p.ID);
+}
+
+// Novo lote da MESMA solução, sem redigitar o cadastro (PT-007-F01): copia
+// identificação, certificador e incerteza do material de origem — que não mudam
+// entre compras — e pede só o que é de fato novo: lote, certificado e validade.
+//
+// Com SubstituirOrigem = true, cumpre também a tabela "Histórico de Substituição
+// de Lotes" do formulário: o lote antigo vira Status 'Substituído' e a troca fica
+// registrada em Movimentacoes com lote anterior, lote novo e motivo — gerado
+// automaticamente em vez de digitado à mão no Word.
+function duplicarMaterialReferencia_(p) {
+  if (!p.IDOrigem) throw new Error('Informe o material de referência a duplicar.');
+  if (!p.Lote) throw new Error('Informe o lote do novo material.');
+  if (!p.NumeroCertificado) throw new Error('Informe o número do certificado.');
+  if (!p.Validade) throw new Error('Informe a validade.');
+
+  var origem = getMaterialReferencia_(p.IDOrigem);
+
+  var novo = criarMaterialReferencia_({
+    Identificacao: origem.Identificacao,
+    Certificador: origem.Certificador,
+    IncertezaMedicao: origem.IncertezaMedicao,
+    NumeroCertificado: p.NumeroCertificado,
+    Lote: p.Lote,
+    Validade: p.Validade,
+    Status: 'Em uso',
+    TecnicoResponsavel: p.TecnicoResponsavel !== undefined ? p.TecnicoResponsavel : origem.TecnicoResponsavel,
+    Observacoes: p.Observacoes || ''
+  });
+
+  if (p.SubstituirOrigem) {
+    updateRowById_(getSheet_('MateriaisReferencia'), 'ID', p.IDOrigem, { Status: 'Substituído' });
+    registrarMovimentacao_({
+      ItemID: novo.ID,
+      Tipo: 'Substituicao-Lote',
+      Observacoes: 'Lote anterior: ' + origem.Lote + ' -> Novo lote: ' + p.Lote +
+        (p.Motivo ? ' | Motivo: ' + p.Motivo : '')
+    });
+  }
+
+  return novo;
 }
 
 // Remoção suave — mantém a linha (com lote/certificado) na planilha para
@@ -829,9 +747,21 @@ function custoPorProjeto_(projeto) {
   return Object.keys(totals).map(function (k) { return { projeto: k, custo: totals[k] }; });
 }
 
+// Uma data digitada como texto 'YYYY-MM-DD' na planilha é interpretada como UTC
+// pelo JavaScript. Com o fuso do script em Brasília (UTC-3), isso jogava o
+// vencimento pro dia anterior e o aviso do Painel aparecia/vencia um dia antes.
+// Quando a célula é uma data de verdade do Sheets, já vem como Date e passa direto.
 function diasAte_(dataStr) {
   if (!dataStr) return null;
-  var data = new Date(dataStr);
+  var data;
+  if (Object.prototype.toString.call(dataStr) === '[object Date]') {
+    data = new Date(dataStr.getTime());
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(String(dataStr))) {
+    var p = String(dataStr).split('-');
+    data = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  } else {
+    data = new Date(dataStr);
+  }
   if (isNaN(data.getTime())) return null;
   var hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -848,7 +778,7 @@ function avisos_(diasAntecedencia) {
     .filter(function (a) { return a.diasRestantes !== null && a.diasRestantes <= diasAntecedencia; });
 
   var validades = sheetToObjects_(getSheet_('MateriaisReferencia'))
-    .filter(function (m) { return m.Validade && m.Status !== 'Descartado' && m.Status !== 'Removido'; })
+    .filter(function (m) { return m.Validade && materialAtivo_(m); })
     .map(function (m) {
       return { tipo: 'Validade material de referência', id: m.ID, descricao: m.Identificacao, data: m.Validade, diasRestantes: diasAte_(m.Validade) };
     })

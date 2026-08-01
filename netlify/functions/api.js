@@ -8,8 +8,7 @@
 //   APPS_SCRIPT_URL   -> URL do Web App do Apps Script (ver apps-script/Code.gs)
 //   APPS_SCRIPT_SECRET-> mesmo valor colocado na propriedade API_SECRET do Apps Script
 
-const { requireEnv, sign, parseCookies, setCookieHeader, json, sessaoPayload, hashSenha, chamarAppsScript, COOKIE_NAME } = require('./_auth');
-const { acaoPermitidaParaPapel } = require('./_permissoes');
+const { requireEnv, sign, setCookieHeader, json, sessaoPayload, chamarAppsScript } = require('./_auth');
 
 const SESSION_HOURS = 12;
 
@@ -34,29 +33,13 @@ exports.handler = async (event) => {
   const { action, payload } = body;
 
   if (action === 'login') {
-    const senha = payload && payload.senha;
+    // .trim() evita que espaço extra vindo de copiar/colar a senha (ex: quebra
+    // de linha ou espaço no fim) derrube o login por engano.
+    const senha = (payload && payload.senha || '').trim();
     if (senha !== requireEnv('ADMIN_PASSWORD')) {
       return json(401, { ok: false, error: 'Senha incorreta.' });
     }
     return criarSessao('admin', 'Administrador');
-  }
-
-  if (action === 'loginAnalista') {
-    const usuario = payload && payload.usuario;
-    const senha = payload && payload.senha;
-    if (!usuario || !senha) {
-      return json(400, { ok: false, error: 'Informe usuário e senha.' });
-    }
-    let resultado;
-    try {
-      resultado = await chamarAppsScript('verificarUsuario', { usuario, senhaHash: hashSenha(senha) });
-    } catch (err) {
-      return json(500, { ok: false, error: err.message });
-    }
-    if (!resultado.ok || !resultado.data || !resultado.data.ok) {
-      return json(401, { ok: false, error: 'Usuário ou senha incorretos.' });
-    }
-    return criarSessao('analista', resultado.data.nome);
   }
 
   if (action === 'logout') {
@@ -66,31 +49,6 @@ exports.handler = async (event) => {
   const sessao = sessaoPayload(event);
   if (!sessao) {
     return json(401, { ok: false, error: 'Sessão expirada. Faça login novamente.' });
-  }
-
-  if (!acaoPermitidaParaPapel(action, sessao.papel)) {
-    return json(403, { ok: false, error: 'Ação não permitida para este perfil de acesso.' });
-  }
-
-  // Analista só reserva em nome dele mesmo — o servidor força isso (não confia
-  // no que o front-end mandou), pra facilitar a supervisão e impedir que
-  // alguém reserve usando o nome de outro colaborador.
-  if (sessao.papel === 'analista' && action === 'criarReserva' && payload) {
-    payload.Colaborador = sessao.nome;
-  }
-
-  // Criação de usuário: a senha em texto puro só existe aqui, na Netlify Function
-  // — vira hash antes de qualquer chamada ao Apps Script/planilha (nunca é salva
-  // em texto puro em lugar nenhum).
-  if (action === 'criarUsuario') {
-    const { Nome, Usuario, senha } = payload || {};
-    if (!senha) return json(400, { ok: false, error: 'Informe a senha do novo usuário.' });
-    try {
-      const result = await chamarAppsScript('criarUsuario', { Nome, Usuario, SenhaHash: hashSenha(senha) });
-      return json(200, result);
-    } catch (err) {
-      return json(500, { ok: false, error: err.message });
-    }
   }
 
   try {

@@ -3,7 +3,6 @@ import { escapeHtml } from '../util.js';
 
 export async function viewEntrada(main) {
   const itens = await api.listItens();
-  const projetos = await api.listProjetos();
 
   main.innerHTML = `
     <div class="pagina-titulo">
@@ -28,10 +27,6 @@ export async function viewEntrada(main) {
         </label>
         <label>Data da compra
           <input name="DataCompra" type="date" />
-        </label>
-        <label>Projeto
-          <input name="ProjetoDestino" list="lista-projetos" />
-          <datalist id="lista-projetos">${projetos.map((p) => `<option value="${escapeHtml(p.Codigo)}">`).join('')}</datalist>
         </label>
         <label>Observações
           <textarea name="Observacoes"></textarea>

@@ -308,6 +308,10 @@ function registrarMovimentacao_(m) {
   return registro;
 }
 
+// Entrada é compra pro estoque, sem vínculo com projeto — o custo só passa a
+// pertencer a um projeto quando o material sai (registrarSaidaProjeto_). Por isso
+// ProjetoDestino não é gravado aqui, nem que venha no payload: se fosse, o mesmo
+// valor entraria duas vezes no custo por projeto (na compra e na saída).
 function registrarEntrada_(p) {
   if (!p.ItemID) throw new Error('Informe o item da entrada.');
   var itens = getSheet_('Itens');
@@ -318,7 +322,6 @@ function registrarEntrada_(p) {
     Quantidade: p.Quantidade,
     ValorUnitario: p.ValorUnitario,
     Fornecedor: p.Fornecedor,
-    ProjetoDestino: p.ProjetoDestino || '',
     Observacoes: p.Observacoes
   });
   updateRowById_(itens, 'ID', p.ItemID, {

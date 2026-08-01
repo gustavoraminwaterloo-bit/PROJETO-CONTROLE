@@ -35,8 +35,8 @@ const FERRAMENTAS = [
     ID: texto, Categoria: texto, Descricao: texto, Marca: texto, NumeroSerie: texto, DataCompra: texto,
     ValorPago: numero, Fornecedor: texto, Status: texto, ColaboradorAtual: texto, LocalArmazenamento: texto, Observacoes: texto
   }, ['ID'], true),
-  ferramenta('registrarEntrada', 'Registra a entrada (compra) de um item de TI já cadastrado, atualizando valor pago e fornecedor.', {
-    ItemID: texto, Quantidade: numero, ValorUnitario: numero, Fornecedor: texto, DataCompra: texto, ProjetoDestino: texto, Observacoes: texto
+  ferramenta('registrarEntrada', 'Registra a entrada (compra) de um item de TI já cadastrado, atualizando valor pago e fornecedor. Entrada é compra para o estoque e não tem projeto — o vínculo com projeto acontece só na saída (registrarSaidaProjeto).', {
+    ItemID: texto, Quantidade: numero, ValorUnitario: numero, Fornecedor: texto, DataCompra: texto, Observacoes: texto
   }, ['ItemID'], true),
   ferramenta('alocarColaborador', 'Aloca (entrega) um item de TI ou veículo a um colaborador, de forma fixa. Funciona tanto para itens de TI quanto para veículos — use o mesmo ItemID do item ou do veículo.', {
     ItemID: texto, ColaboradorEnvolvido: texto, ProjetoDestino: texto, ValorUnitario: numero, Quantidade: numero, Observacoes: texto

@@ -225,7 +225,9 @@ export function mockCall(action, payload = {}) {
     }
     case 'registrarEntrada': {
       const item = acharItem(db, payload.ItemID);
-      resultado = registrarMovimentacao(db, { ...payload, Tipo: 'Entrada-Compra' });
+      // Entrada não tem projeto (igual a registrarEntrada_ do Code.gs) — o custo
+      // só é atribuído a um projeto na saída, senão contaria duas vezes.
+      resultado = registrarMovimentacao(db, { ...payload, ProjetoDestino: '', Tipo: 'Entrada-Compra' });
       item.Status = 'Em estoque';
       item.ValorPago = Number(payload.ValorUnitario) || 0;
       item.Fornecedor = payload.Fornecedor || '';

@@ -15,6 +15,13 @@ const NOMES_AMIGAVEIS = {
   criarMaterialReferencia: 'Cadastrar novo material de referência', importarLote: 'Importar várias linhas de uma vez'
 };
 
+const SUGESTOES = [
+  'Quais equipamentos vencem calibração nos próximos 60 dias?',
+  'Quanto já foi gasto em cada projeto?',
+  'Quantos itens estão em estoque agora?',
+  'Quem está com o veículo CARRO-01?'
+];
+
 function extrairTexto(content) {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
@@ -50,6 +57,18 @@ function corpoConfirmacao(pendente) {
   return `<table>${linhas}</table>`;
 }
 
+function estadoVazioHtml() {
+  return `
+    <div class="chat-vazio-estado" id="chat-vazio">
+      <div class="chat-vazio-icone">${icons.assistente}</div>
+      <p>Pergunte algo sobre os dados ou cole/anexe linhas de uma planilha para cadastrar em lote.</p>
+      <div class="chat-sugestoes">
+        ${SUGESTOES.map((s) => `<button type="button" class="chip-sugestao">${escapeHtml(s)}</button>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
 export async function viewAssistente(main) {
   let mensagens = [];
   let pendente = null;
@@ -61,9 +80,7 @@ export async function viewAssistente(main) {
       <div class="subtitulo">Converse para consultar dados ou registrar ações — ações que alteram dados sempre pedem sua confirmação antes de executar. Pode colar várias linhas de uma planilha ou anexar um .csv/.txt para cadastrar tudo de uma vez.</div>
     </div>
     <div class="card chat-shell">
-      <div class="chat-mensagens" id="chat-mensagens">
-        <div class="chat-vazio" id="chat-vazio">Pergunte algo como "quais equipamentos vencem calibração este mês?", "registra a devolução do MP-01", ou cole linhas de uma planilha para cadastrar em lote.</div>
-      </div>
+      <div class="chat-mensagens" id="chat-mensagens"></div>
       <div id="chat-pendente-area"></div>
       <p class="msg-erro" id="chat-erro" style="display:none"></p>
       <form id="form-chat" class="chat-form">
@@ -82,8 +99,24 @@ export async function viewAssistente(main) {
   const elEnviar = document.getElementById('chat-enviar');
   const elArquivo = document.getElementById('chat-arquivo');
 
+  function ligarSugestoes() {
+    elMensagens.querySelectorAll('.chip-sugestao').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        elInput.value = chip.textContent;
+        elInput.dispatchEvent(new Event('input'));
+        document.getElementById('form-chat').requestSubmit();
+      });
+    });
+  }
+
   function renderizar() {
-    document.getElementById('chat-vazio')?.remove();
+    if (mensagens.length === 0 && !carregando) {
+      elMensagens.innerHTML = estadoVazioHtml();
+      ligarSugestoes();
+      elPendenteArea.innerHTML = '';
+      return;
+    }
+
     elMensagens.innerHTML = '';
     mensagens.forEach((m) => {
       if (m.role === 'user') {

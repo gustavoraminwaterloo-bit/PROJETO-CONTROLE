@@ -59,19 +59,46 @@ export async function viewMateriaisReferencia(main) {
   // linha antiga continua na planilha, e a troca fica no histórico de movimentações.
   const visiveis = materiais.filter((m) => m.Status !== 'Removido' && m.Status !== 'Substituído');
 
-  const grupos = new Map();
-  visiveis.forEach((m) => {
-    const chaves = tecnicosDoMaterial(m);
-    (chaves.length ? chaves : [SEM_RESPONSAVEL]).forEach((chave) => {
-      if (!grupos.has(chave)) grupos.set(chave, []);
-      grupos.get(chave).push(m);
+  // Estado dos filtros. 'tecnico' é a visão de sempre (PT-007, um card por
+  // responsável); 'validade' é uma lista única ordenada por vencimento — a
+  // pergunta "o que está vencendo" não se responde bem com a lista espalhada
+  // em vários cards.
+  const estado = { busca: '', validade: '', visao: 'tecnico' };
+
+  function filtrar() {
+    const busca = estado.busca.trim().toLowerCase();
+    return visiveis.filter((m) => {
+      if (busca) {
+        const texto = `${m.Identificacao} ${m.Lote} ${m.NumeroCertificado} ${m.Certificador} ${m.TecnicoResponsavel}`.toLowerCase();
+        if (!texto.includes(busca)) return false;
+      }
+      if (estado.validade) {
+        const dias = diasAte(m.Validade);
+        if (dias === null) return false;
+        if (estado.validade === 'vencido' && dias >= 0) return false;
+        if (estado.validade === 'proximo' && (dias < 0 || dias > 30)) return false;
+        if (estado.validade === 'emdia' && dias <= 30) return false;
+      }
+      return true;
     });
-  });
-  const tecnicos = [...grupos.keys()].sort((a, b) => {
-    if (a === SEM_RESPONSAVEL) return 1;
-    if (b === SEM_RESPONSAVEL) return -1;
-    return a.localeCompare(b, 'pt-BR');
-  });
+  }
+
+  function agrupar(lista) {
+    const grupos = new Map();
+    lista.forEach((m) => {
+      const chaves = tecnicosDoMaterial(m);
+      (chaves.length ? chaves : [SEM_RESPONSAVEL]).forEach((chave) => {
+        if (!grupos.has(chave)) grupos.set(chave, []);
+        grupos.get(chave).push(m);
+      });
+    });
+    const nomes = [...grupos.keys()].sort((a, b) => {
+      if (a === SEM_RESPONSAVEL) return 1;
+      if (b === SEM_RESPONSAVEL) return -1;
+      return a.localeCompare(b, 'pt-BR');
+    });
+    return { grupos, nomes };
+  }
 
   function linhaItem(m, tecnicoDoCard) {
     const dias = diasAte(m.Validade);
@@ -83,8 +110,8 @@ export async function viewMateriaisReferencia(main) {
         <td>${formatarData(m.Validade)} ${v ? `<span class="badge ${v.classe}">${v.rotulo}</span>` : ''}</td>
         <td><span class="badge ${classeBadgeStatus(m.Status)}">${escapeHtml(m.Status)}</span></td>
         <td class="no-print acoes">
+          <button type="button" class="secundario btn-duplicar" data-id="${escapeHtml(m.ID)}" title="Cadastrar o lote novo desta solução e, se quiser, substituir este">${icons.mais} Novo lote</button>
           <button type="button" class="secundario icone-only btn-editar" data-id="${escapeHtml(m.ID)}" title="Editar">${icons.editar}</button>
-          <button type="button" class="secundario icone-only btn-duplicar" data-id="${escapeHtml(m.ID)}" title="Novo lote desta mesma solução">${icons.mais}</button>
           <button type="button" class="secundario perigo icone-only btn-remover" data-id="${escapeHtml(m.ID)}" title="Remover">${icons.x}</button>
         </td>
       </tr>
@@ -108,16 +135,122 @@ export async function viewMateriaisReferencia(main) {
     `;
   }
 
+  // Visão "por validade": lista única ordenada por vencimento, sem agrupar. Um
+  // lote compartilhado aparece uma vez só aqui (na visão por técnico ele repete
+  // no card de cada responsável), então é a visão certa pra decidir reposição.
+  function listaPorValidade(lista) {
+    const ordenada = [...lista].sort((a, b) => {
+      const da = diasAte(a.Validade);
+      const db_ = diasAte(b.Validade);
+      if (da === null) return 1;
+      if (db_ === null) return -1;
+      return da - db_;
+    });
+    return `
+      <div class="card">
+        <div class="tabela-wrap">
+          <table>
+            <thead><tr><th>Identificação</th><th>Validade</th><th>Status</th><th>Responsável</th><th class="no-print">Ações</th></tr></thead>
+            <tbody>${ordenada.map((m) => linhaValidade(m)).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function linhaValidade(m) {
+    const dias = diasAte(m.Validade);
+    const v = statusValidade(dias);
+    const tecnicos = tecnicosDoMaterial(m);
+    return `
+      <tr data-id="${escapeHtml(m.ID)}" title="Clique duas vezes para editar">
+        <td>${escapeHtml(m.Identificacao)}${m.Lote ? `<br/><span style="color:var(--text-muted)">lote ${escapeHtml(m.Lote)}</span>` : ''}</td>
+        <td>${formatarData(m.Validade)} ${v ? `<span class="badge ${v.classe}">${v.rotulo}</span>` : ''}${dias !== null ? `<br/><span style="color:var(--text-muted); font-size:0.85em">${dias < 0 ? `vencido há ${Math.abs(dias)}d` : `faltam ${dias}d`}</span>` : ''}</td>
+        <td><span class="badge ${classeBadgeStatus(m.Status)}">${escapeHtml(m.Status)}</span></td>
+        <td>${tecnicos.length ? escapeHtml(tecnicos.join(', ')) : `<span style="color:var(--text-muted)">${SEM_RESPONSAVEL}</span>`}</td>
+        <td class="no-print acoes">
+          <button type="button" class="secundario btn-duplicar" data-id="${escapeHtml(m.ID)}" title="Cadastrar o lote novo desta solução e, se quiser, substituir este">${icons.mais} Novo lote</button>
+          <button type="button" class="secundario icone-only btn-editar" data-id="${escapeHtml(m.ID)}" title="Editar">${icons.editar}</button>
+          <button type="button" class="secundario perigo icone-only btn-remover" data-id="${escapeHtml(m.ID)}" title="Remover">${icons.x}</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function renderResultados() {
+    const filtrados = filtrar();
+    const alvo = document.getElementById('mr-resultados');
+
+    let html;
+    if (!filtrados.length) {
+      html = `<div class="card"><p style="color:var(--text-muted); margin:0">${visiveis.length ? 'Nenhum material encontrado com esses filtros.' : 'Nenhum material cadastrado.'}</p></div>`;
+    } else if (estado.visao === 'validade') {
+      html = listaPorValidade(filtrados);
+    } else {
+      const { grupos, nomes } = agrupar(filtrados);
+      html = nomes.map((t) => cardTecnico(t, grupos.get(t))).join('');
+    }
+    alvo.innerHTML = html;
+
+    const vencidos = filtrados.filter((m) => { const d = diasAte(m.Validade); return d !== null && d < 0; }).length;
+    const proximos = filtrados.filter((m) => { const d = diasAte(m.Validade); return d !== null && d >= 0 && d <= 30; }).length;
+    document.getElementById('mr-resumo').textContent =
+      `${filtrados.length} de ${visiveis.length} materiais` +
+      (vencidos ? ` · ${vencidos} vencido${vencidos > 1 ? 's' : ''}` : '') +
+      (proximos ? ` · ${proximos} vencendo em 30 dias` : '');
+
+    ligarAcoesLinha();
+  }
+
   main.innerHTML = `
     <div class="pagina-titulo acoes" style="justify-content: space-between; align-items:center">
       <div>
         <h2>Materiais de Referência</h2>
-        <div class="subtitulo">${visiveis.length} materiais — agrupados por técnico responsável (PT-007)</div>
+        <div class="subtitulo" id="mr-resumo"></div>
       </div>
       <button type="button" class="secundario" id="btn-novo-geral">${icons.mais} Novo material</button>
     </div>
-    ${tecnicos.length ? tecnicos.map((t) => cardTecnico(t, grupos.get(t))).join('') : '<div class="card">Nenhum material cadastrado.</div>'}
+
+    <div class="card">
+      <div class="tabela-toolbar">
+        <div class="topbar-busca" style="flex:1">
+          ${icons.busca}
+          <input type="search" id="mr-busca" placeholder="identificação, lote, certificado, técnico..." />
+        </div>
+        <select id="mr-validade">
+          <option value="">Todas as validades</option>
+          <option value="vencido">Vencidos</option>
+          <option value="proximo">Vencem em 30 dias</option>
+          <option value="emdia">Em dia</option>
+        </select>
+        <div class="acoes">
+          <button type="button" class="secundario ativo" id="mr-visao-tecnico">Por técnico</button>
+          <button type="button" class="secundario" id="mr-visao-validade">Por validade</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mr-resultados"></div>
   `;
+
+  document.getElementById('mr-busca').addEventListener('input', (e) => {
+    estado.busca = e.target.value;
+    renderResultados();
+  });
+  document.getElementById('mr-validade').addEventListener('change', (e) => {
+    estado.validade = e.target.value;
+    renderResultados();
+  });
+  function trocarVisao(qual) {
+    estado.visao = qual;
+    document.getElementById('mr-visao-tecnico').classList.toggle('ativo', qual === 'tecnico');
+    document.getElementById('mr-visao-validade').classList.toggle('ativo', qual === 'validade');
+    renderResultados();
+  }
+  document.getElementById('mr-visao-tecnico').addEventListener('click', () => trocarVisao('tecnico'));
+  document.getElementById('mr-visao-validade').addEventListener('click', () => trocarVisao('validade'));
+
+  renderResultados();
 
   // Caixinhas de técnico — compartilhado entre "novo/editar material" e
   // "novo lote", pra a lista de responsáveis funcionar igual nos dois.
@@ -175,16 +308,6 @@ export async function viewMateriaisReferencia(main) {
       }
     });
   }
-
-  main.querySelectorAll('.btn-novo').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      abrirFormulario({
-        titulo: 'Novo material de referência',
-        tecnicoFixo: btn.dataset.tecnico,
-        aoSalvar: (dados) => api.criarMaterialReferencia(dados)
-      });
-    });
-  });
 
   document.getElementById('btn-novo-geral').addEventListener('click', () => {
     abrirFormulario({
@@ -263,34 +386,48 @@ export async function viewMateriaisReferencia(main) {
     });
   }
 
-  main.querySelectorAll('.btn-editar').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      abrirEdicaoMaterial(visiveis.find((m) => m.ID === btn.dataset.id));
+  // Chamada a cada redesenho da lista (busca, filtro, troca de visão), porque as
+  // linhas são recriadas e os ouvintes antigos morrem com elas.
+  function ligarAcoesLinha() {
+    main.querySelectorAll('.btn-novo').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        abrirFormulario({
+          titulo: 'Novo material de referência',
+          tecnicoFixo: btn.dataset.tecnico,
+          aoSalvar: (dados) => api.criarMaterialReferencia(dados)
+        });
+      });
     });
-  });
 
-  main.querySelectorAll('.btn-duplicar').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      abrirNovoLote(visiveis.find((m) => m.ID === btn.dataset.id));
+    main.querySelectorAll('.btn-editar').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        abrirEdicaoMaterial(visiveis.find((m) => m.ID === btn.dataset.id));
+      });
     });
-  });
 
-  main.querySelectorAll('tbody tr[data-id]').forEach((tr) => {
-    tr.addEventListener('dblclick', () => {
-      abrirEdicaoMaterial(visiveis.find((m) => m.ID === tr.dataset.id));
+    main.querySelectorAll('.btn-duplicar').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        abrirNovoLote(visiveis.find((m) => m.ID === btn.dataset.id));
+      });
     });
-  });
 
-  main.querySelectorAll('.btn-remover').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const material = visiveis.find((m) => m.ID === btn.dataset.id);
-      if (!confirm(`Remover "${material.Identificacao}"? O histórico de lote/certificado fica preservado, só sai da lista ativa.`)) return;
-      try {
-        await api.removerMaterialReferencia({ ID: material.ID });
-        await viewMateriaisReferencia(main);
-      } catch (err) {
-        alert(err.message);
-      }
+    main.querySelectorAll('tbody tr[data-id]').forEach((tr) => {
+      tr.addEventListener('dblclick', () => {
+        abrirEdicaoMaterial(visiveis.find((m) => m.ID === tr.dataset.id));
+      });
     });
-  });
+
+    main.querySelectorAll('.btn-remover').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const material = visiveis.find((m) => m.ID === btn.dataset.id);
+        if (!confirm(`Remover "${material.Identificacao}"? O histórico de lote/certificado fica preservado, só sai da lista ativa.`)) return;
+        try {
+          await api.removerMaterialReferencia({ ID: material.ID });
+          await viewMateriaisReferencia(main);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  }
 }

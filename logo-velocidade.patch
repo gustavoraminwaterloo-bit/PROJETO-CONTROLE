@@ -1,0 +1,362 @@
+From 1ca4b828c5d6f77cd08c5f3592e343e24f994442 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 24 Sep 2026 20:40:53 -0300
+Subject: [PATCH 1/2] =?UTF-8?q?Troca=20a=20marca=20de=203=20c=C3=ADrculos?=
+ =?UTF-8?q?=20pelo=20logotipo=20oficial=20Waterloo=20Brasil?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- icons.logo: logotipo vetorial do site waterloo.com.br (currentColor, branco no tema escuro)
+- Sidebar e login usam .logo-marca; nome do sistema ao lado, em texto pequeno
+- Favicon: símbolo oficial em branco sobre azul da marca (#144380)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01MqLjGDqAa1zSoWsQHyfTCK
+---
+ public/css/style.css     |  5 +++++
+ public/index.html        |  2 +-
+ public/js/app.js         |  4 ++--
+ public/js/icons.js       | 11 +++--------
+ public/js/views/login.js |  2 +-
+ 5 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/public/css/style.css b/public/css/style.css
+index 47d2646..ecb3f72 100644
+--- a/public/css/style.css
++++ b/public/css/style.css
+@@ -114,6 +114,9 @@ p { line-height: 1.55; }
+   border-radius: var(--radius-sm);
+   flex-shrink: 0;
+ }
++.logo-marca { color: #fff; display: flex; align-items: center; flex-shrink: 0; line-height: 0; }
++.logo-marca svg { display: block; width: 118px; height: auto; }
++.sidebar-brand .nome-sistema { border-left: 1px solid var(--border-strong); padding-left: 10px; }
+ .sidebar-brand .nome-sistema { font-weight: 700; font-size: 0.98rem; line-height: 1.2; }
+ .sidebar-brand .nome-sistema small { display: block; font-weight: 400; color: var(--text-muted); font-size: 0.72rem; }
+ 
+@@ -475,6 +478,8 @@ tbody tr:last-child td { border-bottom: none; }
+   background: var(--primary-soft); color: var(--primary-text);
+   border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;
+ }
++.login-box .logo-marca { justify-content: center; margin: 0 auto 22px; }
++.login-box .logo-marca svg { width: 200px; }
+ .login-box .card { text-align: left; }
+ 
+ .stat { text-align: center; }
+diff --git a/public/index.html b/public/index.html
+index efb8e60..e82d07c 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -3,7 +3,7 @@
+ <title>Controle de Insumos e Patrimônio</title>
+ <meta name="color-scheme" content="dark" />
+ <meta name="theme-color" content="#0a1c30" />
+-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23122a45'/%3E%3Ccircle cx='13' cy='12' r='10' fill='%234c9fe8'/%3E%3Cpath d='M17 8L9 16M9 10L9 16L15 16' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='13' cy='28' r='10' fill='%234c9fe8'/%3E%3Cpath d='M8 28L18 28M13 23L18 28L13 33' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='29' cy='28' r='8' fill='%234c9fe8' opacity='0.55'/%3E%3C/svg%3E" />
++<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23144380'/%3E%3Cg fill='white' transform='translate(2.9 1.3) scale(0.8)'%3E%3Cpath d='M29.52,33.32c-.15-.85-.36-2.09-.36-2.15v-.23c0-.71,.5-1.03,.97-1.03,.31,0,.6,.11,.85,.3l6.88,5.19c.83-1.21,1.32-2.66,1.32-4.24,0-4.13-3.36-7.49-7.49-7.49s-7.48,3.36-7.48,7.49c0,.75,.11,1.47,.32,2.16h4.99Z'/%3E%3Cpath d='M30.57,41.44c-.13,.1-.28,.16-.44,.16-.19,0-.29-.12-.29-.35v-.19l.58-2.85h-5.62v-4.11h5.79l-.66-2.8v-.19c0-.23,.1-.35,.29-.35,.16,0,.31,.06,.44,.16l6.6,5.07-6.68,5.44Z'/%3E%3Cpath d='M6.24,31.15c0,4.13,3.36,7.49,7.49,7.49s7.49-3.36,7.49-7.49-3.36-7.48-7.49-7.48-7.49,3.35-7.49,7.48Z'/%3E%3Cpath d='M13.73,5.23c-.75,0-1.47,.11-2.16,.32v4.99c.85-.15,2.09-.36,2.15-.36h.23c.71,0,1.03,.5,1.03,.97,0,.31-.11,.6-.3,.85l-5.19,6.88c1.21,.83,2.66,1.32,4.24,1.32,4.13,0,7.49-3.36,7.49-7.49s-3.36-7.48-7.49-7.48Z'/%3E%3Cpath d='M3.45,11.59c-.1-.13-.16-.28-.16-.44,0-.19,.12-.29,.35-.29h.19l2.85,.58V5.81h4.11v5.79l2.8-.66h.19c.23,0,.35,.1,.35,.29,0,.16-.06,.31-.16,.44l-5.07,6.6L3.45,11.59Z'/%3E%3C/g%3E%3C/svg%3E" />
+ <link rel="preconnect" href="https://fonts.googleapis.com" />
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+diff --git a/public/js/app.js b/public/js/app.js
+index 16470ed..3fea7fc 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -80,8 +80,8 @@ function layoutBase() {
+     <div class="shell">
+       <aside class="sidebar" id="sidebar">
+         <div class="sidebar-brand">
+-          <div class="logo-icone">${icons.logo}</div>
+-          <div class="nome-sistema">Controle<br /><small>Insumos &amp; Patrimônio</small></div>
++          <div class="logo-marca">${icons.logo}</div>
++          <div class="nome-sistema"><small>Controle de<br />Insumos &amp; Patrimônio</small></div>
+         </div>
+         <nav class="sidebar-nav" id="menu"></nav>
+         <div class="sidebar-user">
+diff --git a/public/js/icons.js b/public/js/icons.js
+index f517364..a1c2092 100644
+--- a/public/js/icons.js
++++ b/public/js/icons.js
+@@ -3,14 +3,9 @@ const BASE = (paths, viewBox = '0 0 24 24') =>
+   `<svg viewBox="${viewBox}" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+ 
+ export const icons = {
+-  // Marca inspirada no símbolo da Waterloo Brasil (círculos + setas de fluxo).
+-  logo: `<svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+-    <circle cx="13" cy="12" r="10" fill="currentColor"/>
+-    <path d="M17 8L9 16M9 10L9 16L15 16" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+-    <circle cx="13" cy="28" r="10" fill="currentColor"/>
+-    <path d="M8 28L18 28M13 23L18 28L13 33" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+-    <circle cx="29" cy="28" r="8" fill="currentColor" opacity="0.55"/>
+-  </svg>`,
++  // Logotipo oficial Waterloo Brasil (copiado de waterloo.com.br, waterloo-brasil-logo3.svg).
++  // Usa currentColor: fica branco no tema escuro via CSS (.logo-marca).
++  logo: `<svg viewBox="0 0 175.93 48.21" width="128" height="35" fill="currentColor" role="img" aria-label="Waterloo Brasil"><path d="M131.97,35.44c0-1.53-.03-1.53-1.46-1.76v-.34h4.58c1.77,0,3.65,.42,3.65,2.5,0,1.51-1.09,2.1-1.85,2.34v.03c1.09,.22,2.37,.79,2.37,2.74,0,2.76-3.13,2.76-4.39,2.76h-2.9v-8.28Zm1.7,2.44h1.03c1.33,0,2.34-.43,2.34-1.96,0-1.39-.79-1.85-2.19-1.85-.93,0-1.19,.05-1.19,.8v3.01Zm0,4.49c0,.63,.63,.63,1.48,.63,1.7,0,2.42-.76,2.42-2.33s-1.14-2.07-2.5-2.07h-1.4v3.76Z"/><path d="M142.03,38.56c0-1.08-.25-1.34-1.22-1.37v-.31l2.76-.49v2.03h.03c.22-.71,.69-2.03,1.93-2.03,.28,0,.57,.03,.83,.08v1.46c-.25-.08-.52-.18-.79-.18-1.56,0-2,1.22-2,2.3v3.69h-1.54v-5.17Z"/><path d="M151.47,42.81c-.28,.32-.8,1.08-1.99,1.08s-2.07-.86-2.07-1.77c0-2.17,3.07-2.34,4.05-2.37v-.79c0-.97,0-2.05-.97-2.05s-1.08,.89-1.08,1.57h-1.83c.17-1.02,.68-2.1,2.9-2.1s2.53,1.13,2.53,2.65v4.69h-1.54v-.91Zm0-2.51c-.55,.02-2.36,.09-2.36,1.56,0,.71,.35,1.2,.93,1.2,.89,0,1.43-.82,1.43-1.87v-.89Z"/><path d="M159.98,37.8c-.23-.15-.97-.74-1.83-.74-.49,0-1.08,.19-1.08,.85,0,1.46,3.38,1.5,3.38,3.85,0,1.51-1.25,2.13-2.78,2.13-.94,0-1.62-.18-1.97-.28v-1.2c.45,.31,1.17,.8,2.04,.8,.97,0,1.33-.49,1.33-1.03,0-1.51-3.38-1.6-3.38-3.73,0-1.11,.76-2.07,2.57-2.07,.79,0,1.46,.2,1.73,.26v1.16Z"/><path d="M163.03,38.56c0-1.08-.25-1.34-1.19-1.37v-.31l2.73-.49v7.34h-1.54v-5.17Zm-.17-4.36c0-.52,.43-.96,.97-.96s.99,.42,.99,.96-.46,.97-1,.97-.96-.43-.96-.97Z"/><path d="M167.81,35.03c0-1.09-.26-1.36-1.17-1.4v-.31l2.71-.39v10.79h-1.54v-8.7Z"/><path d="M84.07,26.52c-.54,.63-1.56,2.1-3.86,2.1s-4.01-1.68-4.01-3.44c0-4.22,5.96-4.55,7.87-4.61v-1.53c0-1.89,0-3.98-1.89-3.98s-2.1,1.74-2.1,3.05h-3.56c.33-1.98,1.32-4.07,5.63-4.07s4.91,2.18,4.91,5.15v9.1h-2.99v-1.77Zm0-4.88c-1.08,.03-4.58,.18-4.58,3.02,0,1.38,.69,2.33,1.8,2.33,1.74,0,2.78-1.59,2.78-3.62v-1.74Z"/><path d="M100.27,28.38c-.66,.12-1.35,.24-2.01,.24-2.87,0-4.55-.45-4.55-3.86V15.57h-2.34v-1.2h2.34v-2.37l2.99-2.66v5.03h3.92v1.2h-3.92v8.71c0,2.1,.15,3.02,2.46,3.02,.36,0,.75-.03,1.11-.12v1.2Z"/><path d="M115.38,27.81c-.57,.21-2.16,.81-4.22,.81-4.58,0-7.33-2.78-7.33-7.78,0-4.73,2.28-6.8,6.29-6.8,5.12,0,5.54,3.71,5.54,5.72h-8.53c0,2.99,1.23,7.24,5.45,7.24,1.26,0,2.31-.3,2.81-.51v1.32Zm-2.72-9.25c0-.69-.06-3.5-2.66-3.5-2.25,0-2.87,2.36-2.87,3.5h5.54Z"/><path d="M120.53,18.26c0-2.1-.48-2.6-2.36-2.66v-.6l5.36-.96v3.95h.06c.42-1.38,1.35-3.95,3.74-3.95,.54,0,1.11,.06,1.62,.15v2.84c-.48-.15-1.02-.36-1.53-.36-3.02,0-3.89,2.36-3.89,4.46v7.15h-2.99v-10.03Z"/><path d="M132.93,11.4c0-2.13-.51-2.63-2.28-2.72v-.6l5.27-.75V28.29h-2.99V11.4Z"/><path d="M141.22,21.34c0-5,2.1-7.3,6.47-7.3s6.47,2.99,6.47,7.3c0,4.88-2.04,7.27-6.47,7.27-4.82,0-6.47-3.08-6.47-7.27Zm6.47,6.26c2.93,0,3.17-3.26,3.17-6.26,0-2.75-.27-6.29-3.17-6.29s-3.17,3.65-3.17,6.29c0,2.48,.21,6.26,3.17,6.26Z"/><path d="M158.25,21.34c0-5,2.1-7.3,6.47-7.3s6.47,2.99,6.47,7.3c0,4.88-2.04,7.27-6.47,7.27-4.82,0-6.47-3.08-6.47-7.27Zm6.47,6.26c2.93,0,3.17-3.26,3.17-6.26,0-2.75-.27-6.29-3.17-6.29s-3.17,3.65-3.17,6.29c0,2.48,.21,6.26,3.17,6.26Z"/><path d="M29.52,33.32c-.15-.85-.36-2.09-.36-2.15v-.23c0-.71,.5-1.03,.97-1.03,.31,0,.6,.11,.85,.3l6.88,5.19c.83-1.21,1.32-2.66,1.32-4.24,0-4.13-3.36-7.49-7.49-7.49s-7.48,3.36-7.48,7.49c0,.75,.11,1.47,.32,2.16h4.99Z"/><path d="M30.57,41.44c-.13,.1-.28,.16-.44,.16-.19,0-.29-.12-.29-.35v-.19l.58-2.85h-5.62v-4.11h5.79l-.66-2.8v-.19c0-.23,.1-.35,.29-.35,.16,0,.31,.06,.44,.16l6.6,5.07-6.68,5.44Z"/><path d="M6.24,31.15c0,4.13,3.36,7.49,7.49,7.49s7.49-3.36,7.49-7.49-3.36-7.48-7.49-7.48-7.49,3.35-7.49,7.48Z"/><path d="M73.81,5.16h-.1c-.73,.08-1.77-.03-3.52,5.29-.11,.37-.24,.76-.39,1.17l-5.94,16.09-6.84-17.8c-.25-.65-.4-1.08-.46-1.28-.06-.21-.09-.45-.09-.73,0-.82,.36-1.36,1.06-1.62,.45-.15,1.26-.24,2.45-.25v-.89h-9.19c-.13,.02-.28,.07-.37,.15-.31,.32,.35,1.75,.79,2.8,.06,.12,.12,.25,.17,.38l2.23,5.84-5.01,13.26-6.84-17.84c-.06-.16-.12-.32-.17-.46,0-1.22,.41-2.5,1.83-3.21,.27-.02,.57-.04,.9-.05v-.89l-3.56-.24c-2.31-.19-5.43-.37-7.82-.12,0,0-2.48,.34-3.36,.71-3.08,1.1-5.24,4.02-5.24,7.44,0,4.03,3.26,7.3,7.3,7.3,2.77,0,5.01-1.63,6.44-3.79,.25-.39,.44-.82,.67-1.26,0,0,.05,0,.13-.03,.12,.32,.23,.64,.35,.98l3.99,11.13,3.53,9.83h.72l7.29-20,5.47,14.58,2.07,5.43h.74l3.01-8.56,1.92-5.48,4.96-14.12c.4-1.1,1-1.87,1.8-2.31,.45-.26,1.09-.45,1.94-.58v-.89h-2.87Z"/><path d="M13.73,5.23c-.75,0-1.47,.11-2.16,.32v4.99c.85-.15,2.09-.36,2.15-.36h.23c.71,0,1.03,.5,1.03,.97,0,.31-.11,.6-.3,.85l-5.19,6.88c1.21,.83,2.66,1.32,4.24,1.32,4.13,0,7.49-3.36,7.49-7.49s-3.36-7.48-7.49-7.48Z"/><path d="M3.45,11.59c-.1-.13-.16-.28-.16-.44,0-.19,.12-.29,.35-.29h.19l2.85,.58V5.81h4.11v5.79l2.8-.66h.19c.23,0,.35,.1,.35,.29,0,.16-.06,.31-.16,.44l-5.07,6.6L3.45,11.59Z"/></svg>`,
+   painel: BASE('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
+   box: BASE('<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>'),
+   entrada: BASE('<path d="M12 5v11"/><path d="M6 11l6 6 6-6"/><path d="M4 20h16"/>'),
+diff --git a/public/js/views/login.js b/public/js/views/login.js
+index a1e810d..4c05b7c 100644
+--- a/public/js/views/login.js
++++ b/public/js/views/login.js
+@@ -6,7 +6,7 @@ export async function viewLogin(main) {
+   main.innerHTML = `
+     <div class="login-shell">
+       <div class="login-box">
+-        <div class="logo-icone">${icons.logo}</div>
++        <div class="logo-marca">${icons.logo}</div>
+         <h2>Controle de Insumos e Patrimônio</h2>
+         <p class="subtitulo" style="color:var(--text-secondary); margin-bottom:20px">Entre para acessar o painel</p>
+         <div class="card">
+-- 
+2.43.0
+
+From 6b6cb8eaad4742147cc71c1da09e12ecedced8a0 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 24 Sep 2026 21:03:11 -0300
+Subject: [PATCH 2/2] Velocidade e identidade: cache curto de leituras,
+ carregamento sob demanda e cores da marca
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- api.js: leituras iguais em 30s reaproveitam a resposta; qualquer escrita
+  (ou o assistente) limpa o cache. mockData só é baixado no modo demo.
+- saida.js: as 3 consultas agora em paralelo.
+- etiquetas.js: biblioteca de QR Code só carrega nessa tela (sai do index.html).
+- style.css: cores da marca do site; gráfico entrada=ciano, saída=laranja;
+  faixa de cores da marca sob o logo e no card de login.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01MqLjGDqAa1zSoWsQHyfTCK
+---
+ public/css/style.css         | 21 +++++++-
+ public/index.html            |  1 -
+ public/js/api.js             | 93 +++++++++++++++++++++++-------------
+ public/js/views/etiquetas.js | 18 ++++++-
+ public/js/views/saida.js     |  6 +--
+ 5 files changed, 99 insertions(+), 40 deletions(-)
+
+diff --git a/public/css/style.css b/public/css/style.css
+index ecb3f72..f185357 100644
+--- a/public/css/style.css
++++ b/public/css/style.css
+@@ -30,8 +30,15 @@
+   --danger-soft: rgba(221, 82, 77, 0.16);
+   --danger-text: #f1837e;
+ 
+-  --series-entrada: #4c9fe8;
+-  --series-saida: #d9a238;
++  /* Cores da marca (site waterloo.com.br) */
++  --marca-azul: #144380;
++  --marca-azul-acinzentado: #97adc7;
++  --marca-ciano: #36bde4;
++  --marca-verde: #81bb27;
++  --marca-laranja: #e95017;
++
++  --series-entrada: var(--marca-ciano);
++  --series-saida: var(--marca-laranja);
+ 
+   --radius-sm: 8px;
+   --radius-md: 12px;
+@@ -106,6 +113,16 @@ p { line-height: 1.55; }
+   border-bottom: 1px solid var(--border);
+   color: var(--text-primary);
+ }
++.sidebar-brand { position: relative; }
++.sidebar-brand::after, .login-box .card::before {
++  content: ''; position: absolute; left: 0; right: 0; height: 3px;
++  background: linear-gradient(90deg,
++    var(--marca-azul-acinzentado) 0 25%, var(--marca-ciano) 25% 50%,
++    var(--marca-verde) 50% 75%, var(--marca-laranja) 75% 100%);
++}
++.sidebar-brand::after { bottom: -1px; }
++.login-box .card { position: relative; overflow: hidden; }
++.login-box .card::before { top: 0; }
+ .sidebar-brand .logo-icone {
+   width: 34px; height: 34px;
+   display: flex; align-items: center; justify-content: center;
+diff --git a/public/index.html b/public/index.html
+index e82d07c..3e45e9c 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -11,5 +11,4 @@
+ 
+ <div id="app"></div>
+ 
+-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+ <script type="module" src="js/app.js"></script>
+diff --git a/public/js/api.js b/public/js/api.js
+index e6fe0d3..c577105 100644
+--- a/public/js/api.js
++++ b/public/js/api.js
+@@ -1,4 +1,3 @@
+-import { mockCall } from './mockData.js';
+ 
+ // Modo de demonstração: liga automaticamente quando o site é aberto como
+ // arquivo local (sem servidor) ou quando o usuário força com ?mock=1.
+@@ -18,6 +17,7 @@ async function chamar(action, payload) {
+       return { ok: true };
+     }
+     try {
++      const { mockCall } = await import('./mockData.js');
+       return { ok: true, data: mockCall(action, payload) };
+     } catch (err) {
+       return { ok: false, error: err.message };
+@@ -44,7 +44,34 @@ async function chamarOuFalhar(action, payload) {
+   return r.data;
+ }
+ 
++// Cache curto de leituras: cada chamada vai Netlify -> Apps Script -> Sheets e
++// leva segundos. Leituras iguais dentro de CACHE_MS reaproveitam a mesma
++// resposta (inclusive a que ainda está em andamento). Qualquer escrita limpa o
++// cache inteiro, então o que este usuário grava aparece na hora.
++const CACHE_MS = 30000;
++const cacheLeituras = new Map();
++const copiar = (d) => (d == null || typeof d !== 'object' ? d : structuredClone(d));
++
++function ler(action, payload) {
++  const chave = action + '|' + JSON.stringify(payload ?? null);
++  const agora = Date.now();
++  const guardado = cacheLeituras.get(chave);
++  // Cada tela recebe a sua cópia, para uma não alterar os dados da outra.
++  if (guardado && agora - guardado.em < CACHE_MS) return guardado.promessa.then(copiar);
++  const promessa = chamarOuFalhar(action, payload);
++  cacheLeituras.set(chave, { em: agora, promessa });
++  promessa.catch(() => cacheLeituras.delete(chave));
++  return promessa.then(copiar);
++}
++
++function escrever(action, payload) {
++  cacheLeituras.clear();
++  return chamarOuFalhar(action, payload).finally(() => cacheLeituras.clear());
++}
++
+ async function chamarAssistente(corpo) {
++  // O assistente pode gravar na planilha (após confirmação): não reaproveitar leituras antigas.
++  cacheLeituras.clear();
+   if (MODO_DEMO) {
+     const mensagens = Array.isArray(corpo.mensagens) ? corpo.mensagens.slice() : [];
+     mensagens.push({
+@@ -66,40 +93,40 @@ async function chamarAssistente(corpo) {
+ 
+ export const api = {
+   login: (senha) => chamar('login', { senha }),
+-  logout: () => chamar('logout', {}),
++  logout: () => { cacheLeituras.clear(); return chamar('logout', {}); },
+ 
+-  listItens: () => chamarOuFalhar('listItens'),
+-  getItem: (id) => chamarOuFalhar('getItem', { id }),
+-  listEquipamentos: () => chamarOuFalhar('listEquipamentos'),
+-  getEquipamento: (id) => chamarOuFalhar('getEquipamento', { id }),
+-  listVeiculos: () => chamarOuFalhar('listVeiculos'),
+-  getVeiculo: (id) => chamarOuFalhar('getVeiculo', { id }),
+-  listMovimentacoes: (itemId) => chamarOuFalhar('listMovimentacoes', { itemId }),
+-  listColaboradores: () => chamarOuFalhar('listColaboradores'),
+-  listProjetos: () => chamarOuFalhar('listProjetos'),
+-  custoPorProjeto: (projeto) => chamarOuFalhar('custoPorProjeto', { projeto }),
+-  listMateriaisReferencia: () => chamarOuFalhar('listMateriaisReferencia'),
+-  avisos: (dias) => chamarOuFalhar('avisos', { dias }),
++  listItens: () => ler('listItens'),
++  getItem: (id) => ler('getItem', { id }),
++  listEquipamentos: () => ler('listEquipamentos'),
++  getEquipamento: (id) => ler('getEquipamento', { id }),
++  listVeiculos: () => ler('listVeiculos'),
++  getVeiculo: (id) => ler('getVeiculo', { id }),
++  listMovimentacoes: (itemId) => ler('listMovimentacoes', { itemId }),
++  listColaboradores: () => ler('listColaboradores'),
++  listProjetos: () => ler('listProjetos'),
++  custoPorProjeto: (projeto) => ler('custoPorProjeto', { projeto }),
++  listMateriaisReferencia: () => ler('listMateriaisReferencia'),
++  avisos: (dias) => ler('avisos', { dias }),
+ 
+-  criarItem: (payload) => chamarOuFalhar('criarItem', payload),
+-  registrarEntrada: (payload) => chamarOuFalhar('registrarEntrada', payload),
+-  alocarColaborador: (payload) => chamarOuFalhar('alocarColaborador', payload),
+-  registrarSaidaProjeto: (payload) => chamarOuFalhar('registrarSaidaProjeto', payload),
+-  registrarDevolucao: (payload) => chamarOuFalhar('registrarDevolucao', payload),
+-  criarEquipamento: (payload) => chamarOuFalhar('criarEquipamento', payload),
+-  editarEquipamento: (payload) => chamarOuFalhar('editarEquipamento', payload),
+-  registrarLocacao: (payload) => chamarOuFalhar('registrarLocacao', payload),
+-  registrarDevolucaoEquipamento: (payload) => chamarOuFalhar('registrarDevolucaoEquipamento', payload),
+-  registrarCalibracaoEquipamento: (payload) => chamarOuFalhar('registrarCalibracaoEquipamento', payload),
+-  criarVeiculo: (payload) => chamarOuFalhar('criarVeiculo', payload),
+-  criarColaborador: (payload) => chamarOuFalhar('criarColaborador', payload),
+-  criarProjeto: (payload) => chamarOuFalhar('criarProjeto', payload),
+-  criarMaterialReferencia: (payload) => chamarOuFalhar('criarMaterialReferencia', payload),
+-  atualizarResponsavelMaterialReferencia: (payload) => chamarOuFalhar('atualizarResponsavelMaterialReferencia', payload),
+-  editarMaterialReferencia: (payload) => chamarOuFalhar('editarMaterialReferencia', payload),
+-  duplicarMaterialReferencia: (payload) => chamarOuFalhar('duplicarMaterialReferencia', payload),
+-  removerMaterialReferencia: (payload) => chamarOuFalhar('removerMaterialReferencia', payload),
+-  atualizarContratoVeiculo: (payload) => chamarOuFalhar('atualizarContratoVeiculo', payload),
++  criarItem: (payload) => escrever('criarItem', payload),
++  registrarEntrada: (payload) => escrever('registrarEntrada', payload),
++  alocarColaborador: (payload) => escrever('alocarColaborador', payload),
++  registrarSaidaProjeto: (payload) => escrever('registrarSaidaProjeto', payload),
++  registrarDevolucao: (payload) => escrever('registrarDevolucao', payload),
++  criarEquipamento: (payload) => escrever('criarEquipamento', payload),
++  editarEquipamento: (payload) => escrever('editarEquipamento', payload),
++  registrarLocacao: (payload) => escrever('registrarLocacao', payload),
++  registrarDevolucaoEquipamento: (payload) => escrever('registrarDevolucaoEquipamento', payload),
++  registrarCalibracaoEquipamento: (payload) => escrever('registrarCalibracaoEquipamento', payload),
++  criarVeiculo: (payload) => escrever('criarVeiculo', payload),
++  criarColaborador: (payload) => escrever('criarColaborador', payload),
++  criarProjeto: (payload) => escrever('criarProjeto', payload),
++  criarMaterialReferencia: (payload) => escrever('criarMaterialReferencia', payload),
++  atualizarResponsavelMaterialReferencia: (payload) => escrever('atualizarResponsavelMaterialReferencia', payload),
++  editarMaterialReferencia: (payload) => escrever('editarMaterialReferencia', payload),
++  duplicarMaterialReferencia: (payload) => escrever('duplicarMaterialReferencia', payload),
++  removerMaterialReferencia: (payload) => escrever('removerMaterialReferencia', payload),
++  atualizarContratoVeiculo: (payload) => escrever('atualizarContratoVeiculo', payload),
+ 
+   assistente: (corpo) => chamarAssistente(corpo)
+ };
+diff --git a/public/js/views/etiquetas.js b/public/js/views/etiquetas.js
+index 1ef62de..a2bd608 100644
+--- a/public/js/views/etiquetas.js
++++ b/public/js/views/etiquetas.js
+@@ -13,8 +13,24 @@ function urlDoAlvo(baseUrl, alvo) {
+   return `${baseUrl.replace(/\/$/, '')}/#/${rota}/${encodeURIComponent(alvo.ID)}`;
+ }
+ 
++// A biblioteca de QR Code só é baixada quando alguém abre esta tela.
++let carregandoQr = null;
++function carregarQrcode() {
++  if (typeof window.qrcode === 'function') return Promise.resolve();
++  if (!carregandoQr) {
++    carregandoQr = new Promise((resolve, reject) => {
++      const s = document.createElement('script');
++      s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
++      s.onload = resolve;
++      s.onerror = () => { carregandoQr = null; reject(new Error('Não foi possível carregar o gerador de QR Code.')); };
++      document.head.appendChild(s);
++    });
++  }
++  return carregandoQr;
++}
++
+ export async function viewEtiquetas(main) {
+-  const [itens, equipamentos] = await Promise.all([api.listItens(), api.listEquipamentos()]);
++  const [itens, equipamentos] = await Promise.all([api.listItens(), api.listEquipamentos(), carregarQrcode()]);
+   const todos = [
+     ...itens.map((i) => ({ ...i, tipo: 'item' })),
+     ...equipamentos.map((e) => ({ ...e, tipo: 'equipamento' }))
+diff --git a/public/js/views/saida.js b/public/js/views/saida.js
+index 5d6d400..686bd37 100644
+--- a/public/js/views/saida.js
++++ b/public/js/views/saida.js
+@@ -2,9 +2,9 @@ import { api } from '../api.js';
+ import { escapeHtml } from '../util.js';
+ 
+ export async function viewSaida(main) {
+-  const itens = await api.listItens();
+-  const projetos = await api.listProjetos();
+-  const colaboradores = await api.listColaboradores();
++  const [itens, projetos, colaboradores] = await Promise.all([
++    api.listItens(), api.listProjetos(), api.listColaboradores()
++  ]);
+ 
+   const opcoesItens = itens.filter((i) => i.Status === 'Em estoque');
+   const opcoesColaboradores = colaboradores.map((c) => `<option>${escapeHtml(c.Nome)}</option>`).join('');
+-- 
+2.43.0
+
